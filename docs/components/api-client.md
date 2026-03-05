@@ -86,6 +86,12 @@ export default class ApiClient {
    */
   get lastDataTimestamp()
 
+/**
+   * Epoch ms of the last successful API response (data-bearing or not).
+   * @type {number}
+   */
+  get lastApiTimestamp()
+
   /**
    * Current circuit-breaker state.
    * @returns {"closed"|"open"|"half-open"}

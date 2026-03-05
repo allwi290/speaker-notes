@@ -71,7 +71,7 @@ export default class ConnectionMonitor {
       `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 
     // Connection status
-    const lastTs = this.#apiClient.lastDataTimestamp;
+    const lastTs = this.#apiClient.lastApiTimestamp;
     const age = lastTs ? now - lastTs : Infinity;
 
     // Dot colour
@@ -85,8 +85,8 @@ export default class ConnectionMonitor {
     }
 
     // Last data text
-    if (lastTs) {
-      const ld = new Date(lastTs);
+    if (this.#apiClient.lastDataTimestamp) {
+      const ld = new Date(this.#apiClient.lastDataTimestamp);
       this.#lastDataEl.textContent =
         `Last data: ${String(ld.getHours()).padStart(2, '0')}:${String(ld.getMinutes()).padStart(2, '0')}:${String(ld.getSeconds()).padStart(2, '0')}`;
     } else {

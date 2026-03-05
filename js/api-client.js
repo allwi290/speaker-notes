@@ -43,6 +43,9 @@ export default class ApiClient {
 
   /** Epoch ms of last data-bearing response */
   #lastDataTimestamp = 0;
+  
+  /** Epoch ms of last successful API response (data-bearing or not) */
+  #lastApiTimestamp = 0;
 
   /**
    * @param {string} [baseUrl]
@@ -66,21 +69,15 @@ export default class ApiClient {
   }
 
   /**
-   * Fetch classes for a competition (hash-cached).
+   * Fetch classes for a competition (no hash caching).
    * @param   {number} compId
    * @returns {Promise<Array|null>}  null = not modified
    */
   async getClasses(compId) {
     const hashKey = `classes:${compId}`;
     const params = new URLSearchParams({ method: 'getclasses', comp: String(compId) });
-    const lastHash = this.#hashes.get(hashKey);
-    if (lastHash) params.set('last_hash', lastHash);
-
     const data = await this.#request(params, hashKey);
-    if (data === null) return null;
-
-    if (data.hash) this.#hashes.set(hashKey, data.hash);
-    return data.classes ?? [];
+    return data?.classes ?? [];
   }
 
   /**
@@ -113,7 +110,10 @@ export default class ApiClient {
   get lastDataTimestamp() {
     return this.#lastDataTimestamp;
   }
-
+  /** Epoch ms of the last successful API response (data-bearing or not). */
+  get lastApiTimestamp() {
+    return this.#lastApiTimestamp;
+  }
   /** @returns {"closed"|"open"|"half-open"} */
   get circuitState() {
     if (this.#cbState === 'open') {
@@ -160,6 +160,8 @@ export default class ApiClient {
         sanitizeBytes(bytes);
         const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
         const data = JSON.parse(text);
+        const now = Date.now();
+        this.#lastApiTimestamp = now;
 
         // NOT MODIFIED
         if (data.status === 'NOT MODIFIED') {
@@ -168,7 +170,7 @@ export default class ApiClient {
         }
 
         // Successful data
-        this.#lastDataTimestamp = Date.now();
+        this.#lastDataTimestamp = now;
         this.#cbSuccess();
         return data;
 
