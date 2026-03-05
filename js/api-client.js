@@ -13,13 +13,16 @@ const CB_FAILURE_THRESHOLD = 3;
 const CB_OPEN_DURATION     = 30_000; // ms
 
 /**
- * Replace control characters (0x00–0x1F) except HT, LF, CR with space.
+ * Replace ALL control characters (0x00–0x1F) with space.
+ * This includes HT, LF, CR — when these appear inside JSON string values
+ * they are invalid unescaped control characters that break JSON.parse.
+ * Replacing them with space is safe because space (0x20) is also valid
+ * JSON structural whitespace.
  * @param {Uint8Array} bytes
  */
 function sanitizeBytes(bytes) {
   for (let i = 0; i < bytes.length; i++) {
-    const b = bytes[i];
-    if (b < 0x20 && b !== 0x09 && b !== 0x0a && b !== 0x0d) {
+    if (bytes[i] < 0x20) {
       bytes[i] = 0x20;
     }
   }
