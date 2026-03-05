@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaker Notes — Orienteering Live</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1 class="app-header__title">Speaker Notes</h1>
+      <div class="app-header__right">
+        <button id="settings-btn" class="app-header__settings" title="Change settings" aria-label="Settings">⚙</button>
+        <div id="connection-monitor" class="conn-monitor"></div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section id="latest-events" class="panel panel--latest">
+        <h2 class="panel__title">Latest Events</h2>
+        <div class="panel__header event-row event-row--header">
+          <span class="event-row__time">Time</span>
+          <span class="event-row__class">Class</span>
+          <span class="event-row__runner">Runner</span>
+          <span class="event-row__club">Club</span>
+          <span class="event-row__control">Control</span>
+          <span class="event-row__place">Place</span>
+          <span class="event-row__timeplus">+Time</span>
+        </div>
+        <div class="panel__list" role="log" aria-live="polite"></div>
+      </section>
+
+      <section id="predictions" class="panel panel--predictions">
+        <h2 class="panel__title">Upcoming Predictions</h2>
+        <div class="panel__header prediction-row prediction-row--header">
+          <span class="prediction-row__time">Predicted</span>
+          <span class="prediction-row__class">Class</span>
+          <span class="prediction-row__runner">Runner</span>
+          <span class="prediction-row__club">Club</span>
+          <span class="prediction-row__control">Control</span>
+          <span class="prediction-row__confidence">Confidence</span>
+        </div>
+        <div class="panel__list"></div>
+      </section>
+    </main>
+
+    <div id="setup-wizard" class="wizard" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
