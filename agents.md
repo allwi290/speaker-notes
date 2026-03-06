@@ -19,9 +19,11 @@ This document defines the implementation tasks for the Speaker Notes web app. Ea
 ## Agent 1: Scaffold — `index.html` + `css/styles.css`
 
 ### Goal
+
 Create the HTML shell and all CSS for the application.
 
 ### Input
+
 - `docs/architecture.md` (file structure)
 - `docs/components/latest-events-panel.md` (DOM structure, CSS classes)
 - `docs/components/predictions-panel.md` (DOM structure, CSS classes)
@@ -30,6 +32,7 @@ Create the HTML shell and all CSS for the application.
 - `speaker-notes.md` (readability requirements: Full HD, 1 m+)
 
 ### Tasks
+
 1. Create `index.html` with:
    - `<div id="app">` root container
    - `<script type="module" src="js/app.js">` entry point
@@ -54,10 +57,12 @@ Create the HTML shell and all CSS for the application.
    - Column header row (sticky) for both panels
 
 ### Output
+
 - `index.html`
 - `css/styles.css`
 
 ### Verification
+
 Open `index.html` in a browser. The layout should render with both panels visible (empty), the connection monitor in the header, and the setup wizard overlay. No JS errors in console.
 
 ---
@@ -65,12 +70,15 @@ Open `index.html` in a browser. The layout should render with both panels visibl
 ## Agent 2: SettingsManager — `js/settings-manager.js`
 
 ### Goal
+
 Implement the settings persistence module.
 
 ### Input
+
 - `docs/components/settings-manager.md`
 
 ### Tasks
+
 1. Implement `SettingsManager` class exactly as specified in the interface
 2. Default values: `compId: null`, `compName: null`, `followedClasses: null` (= all), `followedClubs: []`, `topN: 4`, `maxLatestEvents: 10`, `maxPredictions: 5`
 3. `localStorage` key: `"speaker-notes-settings"`
@@ -80,10 +88,13 @@ Implement the settings persistence module.
 7. `reset()` clears all to defaults and persists
 
 ### Output
+
 - `js/settings-manager.js`
 
 ### Verification
+
 In browser console:
+
 ```js
 import SettingsManager from './js/settings-manager.js';
 const s = new SettingsManager();
@@ -99,13 +110,16 @@ console.assert(s.get('topN') === 4);
 ## Agent 3: ApiClient — `js/api-client.js`
 
 ### Goal
+
 Implement the HTTP client for the liveresultat API.
 
 ### Input
+
 - `docs/components/api-client.md`
 - `speaker-notes.md` (API section: endpoints, hash caching, response formats)
 
 ### Tasks
+
 1. Implement `ApiClient` class exactly as specified
 2. **URL builder:** `${baseUrl}?method=...&comp=...&class=...&unformattedTimes=true&last_hash=...`
 3. **Hash caching:** Internal `Map<string, string>` keyed by `"compId:className"` (and `"classes:compId"` for getClasses). Send `last_hash` query parameter on subsequent calls. Return `null` when response is `{ "status": "NOT MODIFIED" }`.
@@ -118,10 +132,13 @@ Implement the HTTP client for the liveresultat API.
 10. **`getClassResults(compId, className, options)`:** Hash-cached, sends `unformattedTimes=true`.
 
 ### Output
+
 - `js/api-client.js`
 
 ### Verification
+
 In browser console:
+
 ```js
 import ApiClient from './js/api-client.js';
 const api = new ApiClient();
@@ -137,12 +154,15 @@ console.log('Competitions:', comps.length);
 ## Agent 4: AudioNotifier — `js/audio-notifier.js`
 
 ### Goal
+
 Implement the audio chime module.
 
 ### Input
+
 - `docs/components/audio-notifier.md`
 
 ### Tasks
+
 1. Implement `AudioNotifier` class exactly as specified
 2. Create `AudioContext` lazily on first `chime()` call
 3. Unlock `AudioContext` via a one-time `click`/`touchstart` handler on `document` that calls `ctx.resume()`
@@ -152,10 +172,13 @@ Implement the audio chime module.
 7. `muted` getter
 
 ### Output
+
 - `js/audio-notifier.js`
 
 ### Verification
+
 Open `index.html`, click anywhere on the page, then in console:
+
 ```js
 import AudioNotifier from './js/audio-notifier.js';
 const a = new AudioNotifier();
@@ -167,13 +190,16 @@ a.chime(); // should hear a short tone
 ## Agent 5: RunnerStateStore — `js/runner-state-store.js`
 
 ### Goal
+
 Implement the in-memory runner state store with change detection.
 
 ### Input
+
 - `docs/components/runner-state-store.md`
 - `speaker-notes.md` (runner status codes, split data format, API response structure)
 
 ### Tasks
+
 1. Implement `RunnerStateStore` exactly as specified
 2. **Runner key:** `"name|club"` to handle name collisions
 3. **`updateClass(className, splitcontrols, results)`:**
@@ -198,9 +224,11 @@ Implement the in-memory runner state store with change detection.
 8. **`clearClass(className)`:** Remove all data for a class
 
 ### Output
+
 - `js/runner-state-store.js`
 
 ### Verification
+
 Create `tests/test-runner-state-store.html` that imports the module, feeds it the sample API response from `speaker-notes.md`, calls `updateClass` twice (initial + one split change), and logs the changeset and top-N result.
 
 ---
@@ -208,13 +236,16 @@ Create `tests/test-runner-state-store.html` that imports the module, feeds it th
 ## Agent 6: EventDetector — `js/event-detector.js`
 
 ### Goal
+
 Implement the business-rule filter that turns raw changesets into visible latest events.
 
 ### Input
+
 - `docs/components/event-detector.md`
 - `speaker-notes.md` (top-N definition, club-follow bypass, status change display rules)
 
 ### Tasks
+
 1. Implement `EventDetector` exactly as specified
 2. **`processChanges(changes)`:**
    - For each `RunnerChange`:
@@ -240,9 +271,11 @@ Implement the business-rule filter that turns raw changesets into visible latest
 6. **Time formatting helper:** Convert centiseconds to `HH:MM:SS` display strings. Convert centisecond timeplus to `+M:SS`. Export this as a utility or keep it internal.
 
 ### Output
+
 - `js/event-detector.js`
 
 ### Verification
+
 Create `tests/test-event-detector.html` — feed mock changes for both a top-N runner and clubbed runner, verify both appear; feed a change for a non-top-N, non-clubbed runner, verify it's filtered out.
 
 ---
@@ -250,13 +283,16 @@ Create `tests/test-event-detector.html` — feed mock changes for both a top-N r
 ## Agent 7: PredictionEngine — `js/prediction-engine.js`
 
 ### Goal
+
 Implement the prediction calculation module.
 
 ### Input
+
 - `docs/components/prediction-engine.md`
 - `speaker-notes.md` (prediction formula, reference runner selection, 15-min expiry)
 
 ### Tasks
+
 1. Implement `PredictionEngine` exactly as specified
 2. **`updatePredictions(className)`:**
    - Get the top-N runner keys for the class
@@ -280,9 +316,11 @@ Implement the prediction calculation module.
 5. **`removePrediction(id)`** and **`clear()`** as specified
 
 ### Output
+
 - `js/prediction-engine.js`
 
 ### Verification
+
 Create `tests/test-prediction-engine.html` — feed a class with 2 runners (one ahead as reference, one behind with 1 split) and verify a prediction is generated with sensible predicted time.
 
 ---
@@ -290,13 +328,16 @@ Create `tests/test-prediction-engine.html` — feed a class with 2 runners (one 
 ## Agent 8: ConnectionMonitor — `js/connection-monitor.js`
 
 ### Goal
+
 Implement the connection health indicator.
 
 ### Input
+
 - `docs/components/connection-monitor.md`
 - `speaker-notes.md` (green/yellow/red thresholds)
 
 ### Tasks
+
 1. Implement `ConnectionMonitor` exactly as specified
 2. On `start()`:
    - Start a `setInterval` at 1000 ms
@@ -310,9 +351,11 @@ Implement the connection health indicator.
 4. Render into the passed `containerEl` by creating the DOM elements on construction
 
 ### Output
+
 - `js/connection-monitor.js`
 
 ### Verification
+
 Open the app, observe the clock ticking. Since no polling is active yet, the dot should be red (no data ever received). Manually set `apiClient._lastDataTimestamp = Date.now()` and observe it turn green.
 
 ---
@@ -320,13 +363,16 @@ Open the app, observe the clock ticking. Since no polling is active yet, the dot
 ## Agent 9: SetupWizard — `js/setup-wizard.js`
 
 ### Goal
+
 Implement the setup wizard overlay.
 
 ### Input
+
 - `docs/components/setup-wizard.md`
 - `speaker-notes.md` (user workflow: competition → classes → clubs → top-N)
 
 ### Tasks
+
 1. Implement `SetupWizard` exactly as specified
 2. **Step 1 — Competition:**
    - Call `apiClient.getCompetitions()`
@@ -351,9 +397,11 @@ Implement the setup wizard overlay.
 8. `open(onComplete)` shows the overlay; `close()` hides it
 
 ### Output
+
 - `js/setup-wizard.js`
 
 ### Verification
+
 Open `index.html`. The wizard should appear. Select a competition (if today has one on liveresultat — otherwise test with any date's competitions by temporarily removing the date filter). Navigate through all steps and confirm settings are persisted in localStorage.
 
 ---
@@ -361,12 +409,15 @@ Open `index.html`. The wizard should appear. Select a competition (if today has 
 ## Agent 10: LatestEventsPanel — `js/latest-events-panel.js`
 
 ### Goal
+
 Implement the upper display panel for latest events.
 
 ### Input
+
 - `docs/components/latest-events-panel.md`
 
 ### Tasks
+
 1. Implement `LatestEventsPanel` exactly as specified
 2. **`render(events)`:** Full re-render. Clear container, create a header row, then one `.event-row` per event.
 3. **`update(newEvents, allEvents)`:**
@@ -381,9 +432,11 @@ Implement the upper display panel for latest events.
 6. **`clear()`:** Remove all rows
 
 ### Output
+
 - `js/latest-events-panel.js`
 
 ### Verification
+
 Import the module, call `render()` with mock event data, and verify the rows appear with correct styling. Add a new event via `update()` and verify the slide-in animation fires.
 
 ---
@@ -391,12 +444,15 @@ Import the module, call `render()` with mock event data, and verify the rows app
 ## Agent 11: PredictionsPanel — `js/predictions-panel.js`
 
 ### Goal
+
 Implement the lower display panel for predictions.
 
 ### Input
+
 - `docs/components/predictions-panel.md`
 
 ### Tasks
+
 1. Implement `PredictionsPanel` exactly as specified
 2. **`render(predictions)`:** Full re-render. Clear container, create a header row, then one `.prediction-row` per prediction.
    - If `prediction.predictedTimeMs < Date.now()` → add class `prediction-row--overdue`
@@ -404,9 +460,11 @@ Implement the lower display panel for predictions.
 4. **`clear()`:** Remove all rows
 
 ### Output
+
 - `js/predictions-panel.js`
 
 ### Verification
+
 Import the module, call `render()` with mock prediction data, verify rows show correctly. Set one prediction time to the past and verify the overdue class is applied.
 
 ---
@@ -414,13 +472,16 @@ Import the module, call `render()` with mock prediction data, verify rows show c
 ## Agent 12: PollingScheduler — `js/polling-scheduler.js`
 
 ### Goal
+
 Implement the staggered polling loop.
 
 ### Input
+
 - `docs/components/polling-scheduler.md`
 - `speaker-notes.md` (15-s polling interval, stagger requests, circuit breaker, visibility API)
 
 ### Tasks
+
 1. Implement `PollingScheduler` exactly as specified
 2. **`start(onClassUpdate)`:**
    - Read `settings.compId` and `settings.followedClasses`
@@ -437,9 +498,11 @@ Implement the staggered polling loop.
 5. **`refresh()`:** Stop the current cycle, re-read settings, restart
 
 ### Output
+
 - `js/polling-scheduler.js`
 
 ### Verification
+
 Start polling with a real competition ID. Observe network requests in DevTools, verify they are spaced evenly across ~15 s. Verify `onClassUpdate` callback fires.
 
 ---
@@ -447,13 +510,16 @@ Start polling with a real competition ID. Observe network requests in DevTools, 
 ## Agent 13: App Orchestrator — `js/app.js`
 
 ### Goal
+
 Wire all modules together into the main application.
 
 ### Input
+
 - `docs/components/app.md`
 - All other `docs/components/*.md` for interfaces
 
 ### Tasks
+
 1. Implement `App` exactly as specified
 2. **`constructor(rootEl)`:** Instantiate all modules, passing dependencies as specified in each component's doc.
    - `const settings = new SettingsManager()`
@@ -483,16 +549,20 @@ Wire all modules together into the main application.
 6. **`onSetupComplete()`** (private): Clear detector and predictor state, call `scheduler.refresh()`, re-enter `startLive()`.
 7. **`destroy()`:** `scheduler.stop()`, `monitor.destroy()`
 8. **Entry point at bottom of file:**
+
    ```js
    const app = new App(document.getElementById('app'));
    app.init();
    ```
 
 ### Output
+
 - `js/app.js`
 
 ### Verification
+
 Open `index.html` in a browser. The full flow should work:
+
 1. Wizard appears → select competition, classes, clubs
 2. Live view activates → events and predictions populate as data arrives
 3. Connection monitor shows green when data flows
@@ -504,13 +574,16 @@ Open `index.html` in a browser. The full flow should work:
 ## Agent 14: Integration Testing & Polish
 
 ### Goal
+
 End-to-end testing, bug fixing, and visual polish.
 
 ### Input
+
 - The complete implemented application
 - `speaker-notes.md` (all requirements)
 
 ### Tasks
+
 1. **End-to-end test with live data:**
    - Open the app, select a real competition (if available today), follow all classes
    - Verify latest events appear and animate in
@@ -540,10 +613,12 @@ End-to-end testing, bug fixing, and visual polish.
    - Browser requirements (modern browser with ES module support)
 
 ### Output
+
 - Bug fixes across any files
 - `README.md`
 
 ### Verification
+
 Complete the full test checklist above with no failures.
 
 ---

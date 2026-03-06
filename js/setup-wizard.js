@@ -3,6 +3,8 @@
  * @module setup-wizard
  */
 
+import { getDate } from './clock.js';
+
 const STEPS = ['competition', 'classes', 'clubs', 'topn'];
 
 export default class SetupWizard {
@@ -203,7 +205,7 @@ export default class SetupWizard {
 
     try {
       const comps = await this.#api.getCompetitions();
-      const d = new Date();
+      const d = getDate();
       const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const todayComps = comps.filter(c => c.date === today);
 

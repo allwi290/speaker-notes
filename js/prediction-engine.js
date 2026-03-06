@@ -5,6 +5,7 @@
  */
 
 import { formatWallClock } from './event-detector.js';
+import { getNow, getDate } from './clock.js';
 
 const EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -38,7 +39,7 @@ let competitionMidnightMs = null;
  */
 function getCompetitionMidnight() {
   if (competitionMidnightMs === null) {
-    const d = new Date();
+    const d = getDate();
     d.setHours(0, 0, 0, 0);
     competitionMidnightMs = d.getTime();
   }
@@ -80,7 +81,7 @@ export default class PredictionEngine {
    * @param {string} className
    */
   updatePredictions(className) {
-    const now = Date.now();
+    const now = getNow();
     const topN = this.#settings.topN;
     const topNSet = this.#store.getTopN(className, topN);
     const controls = this.#store.getSplitControls(className);
@@ -155,7 +156,7 @@ export default class PredictionEngine {
    * @returns {Prediction[]}
    */
   getPredictions() {
-    const now = Date.now();
+    const now = getNow();
     const preds = [...this.#predictions.values()]
       .filter(p => p.expiresAt > now)
       .sort((a, b) => a.predictedTimeMs - b.predictedTimeMs);
@@ -175,6 +176,9 @@ export default class PredictionEngine {
    */
   clear() {
     this.#predictions.clear();
+    // Reset the cached competition midnight so it recalculates
+    // (important when switching between demo and live mode)
+    competitionMidnightMs = null;
   }
 
   /* --- Private helpers --- */
@@ -263,7 +267,7 @@ export default class PredictionEngine {
     // Confidence
     const confidence = this.#computeConfidence(runner, ref.runner, controls, lastIdx, paceRatio);
 
-    const now = Date.now();
+    const now = getNow();
     return {
       id: predId,
       className,

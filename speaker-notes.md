@@ -75,11 +75,10 @@ The user starts to select which competition he or she should follow. Only compet
 
 A status of the internet connection should be visible in three colors, green, yellow and red, a timestamp when latest runner data has been received and the current browser timestamp (regular update every second)
 
-Color	Condition
-🟢 Green	Successful api-response received within the last 30 seconds (not modified content is also regarded as successful api response)
-🟡 Yellow	No successful api response received for 30–90 seconds
-🔴 Red	No successful api response for 90+ seconds OR fetch errors
-
+Color   Condition
+🟢 Green   Successful api-response received within the last 30 seconds (not modified content is also regarded as successful api response)
+🟡 Yellow   No successful api response received for 30–90 seconds
+🔴 Red   No successful api response for 90+ seconds OR fetch errors
 
 ## Architectural notes
 
@@ -158,7 +157,7 @@ Example response:
 To get the latest event the following query parameters need to be fetched on regular basis. The endpoint is updated with new data at most every 15 seconds.
 Each competition and class must be polled separately on regular basis (i.e. every 15 seconds)
 
-When following many classes spread out the request evenly within the time window, have a circuit breaker and use retries with backoff 
+When following many classes spread out the request evenly within the time window, have a circuit breaker and use retries with backoff.
 
 [?comp=10259&method=getclassresults&unformattedTimes=true&class=Öppen-1](?comp=10259&method=getclassresults&unformattedTimes=true&class=Öppen-1)
 
@@ -260,7 +259,7 @@ This is how getclassresults changes for a runner during a competition
 - At 15:11:57 the runner **finishes**: status → `0`, result `"43:18"`, place `"1"`, timeplus `"+00:00"` — **1st place**.
 - Unchanged properties (`name`, `club`, `start`) are omitted from the table.
 
-** Runner status **
+**Runner status:**
 
 0 - OK
 1 - DNS (Did Not Start)

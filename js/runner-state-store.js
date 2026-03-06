@@ -210,6 +210,13 @@ export default class RunnerStateStore {
     this.#classes.delete(className);
   }
 
+  /**
+   * Remove all data for all classes.
+   */
+  clear() {
+    this.#classes.clear();
+  }
+
   /* ------------------------------------------------------------------
    * Private helpers
    * ----------------------------------------------------------------*/

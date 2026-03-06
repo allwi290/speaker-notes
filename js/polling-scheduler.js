@@ -4,7 +4,7 @@
  * @module polling-scheduler
  */
 
-const CYCLE_MS = 15_000;
+const DEFAULT_CYCLE_MS = 15_000;
 
 export default class PollingScheduler {
 
@@ -28,6 +28,9 @@ export default class PollingScheduler {
 
   /** Cached class list from last successful resolve */
   #cachedClassList = [];
+
+  /** Configurable cycle duration in ms */
+  #cycleMs = DEFAULT_CYCLE_MS;
 
   /** Bound handler for cleanup */
   #visHandler;
@@ -80,6 +83,15 @@ export default class PollingScheduler {
     }
   }
 
+  /**
+   * Set the cycle duration in ms (useful for demo mode speed control).
+   * Takes effect on the next cycle.
+   * @param {number} ms
+   */
+  setCycleMs(ms) {
+    this.#cycleMs = ms;
+  }
+
   /* ------------------------------------------------------------------
    * Internal
    * ----------------------------------------------------------------*/
@@ -113,13 +125,14 @@ export default class PollingScheduler {
     if (!this.#running || this.#classes.length === 0) return;
 
     const n = this.#classes.length;
-    const delay = Math.floor(CYCLE_MS / n);
+    const cycle = this.#cycleMs;
+    const delay = Math.floor(cycle / n);
     let i = 0;
 
     const next = () => {
       if (!this.#running || i >= n) {
         // All classes polled — schedule next cycle
-        const remaining = Math.max(0, CYCLE_MS - delay * n);
+        const remaining = Math.max(0, cycle - delay * n);
         const tid = setTimeout(() => this.#scheduleCycle(), remaining);
         this.#pendingTimeouts.push(tid);
         return;

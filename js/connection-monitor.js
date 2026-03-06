@@ -3,6 +3,8 @@
  * @module connection-monitor
  */
 
+import { getNow, getDate } from './clock.js';
+
 export default class ConnectionMonitor {
 
   /** @type {HTMLElement} */
@@ -63,10 +65,10 @@ export default class ConnectionMonitor {
   }
 
   #tick() {
-    const now = Date.now();
+    const now = getNow();
 
     // Clock
-    const d = new Date(now);
+    const d = getDate();
     this.#clockEl.textContent =
       `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 

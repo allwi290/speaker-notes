@@ -4,6 +4,8 @@
  * @module event-detector
  */
 
+import { getNow } from './clock.js';
+
 /**
  * @typedef {Object} LatestEvent
  * @property {string}  id
@@ -191,8 +193,8 @@ export default class EventDetector {
       : formatTimeplus(change.splitTimeplus);
 
     return {
-      id: `${Date.now()}-${change.runner.name}-${change.controlCode ?? change.type}`,
-      timestamp: Date.now(),
+      id: `${getNow()}-${change.runner.name}-${change.controlCode ?? change.type}`,
+      timestamp: getNow(),
       className: change.className,
       runner: change.runner.name,
       club: change.runner.club,

@@ -3,6 +3,8 @@
  * @module predictions-panel
  */
 
+import { getNow } from './clock.js';
+
 export default class PredictionsPanel {
 
   /** @type {HTMLElement} */
@@ -27,7 +29,7 @@ export default class PredictionsPanel {
       return;
     }
 
-    const now = Date.now();
+    const now = getNow();
     for (const pred of predictions) {
       const row = document.createElement('div');
       row.className = 'prediction-row';
