@@ -76,9 +76,9 @@ The user starts to select which competition he or she should follow. Only compet
 A status of the internet connection should be visible in three colors, green, yellow and red, a timestamp when latest runner data has been received and the current browser timestamp (regular update every second)
 
 Color	Condition
-🟢 Green	Data received within the last 30 seconds
-🟡 Yellow	No data received for 30–90 seconds
-🔴 Red	No data received for 90+ seconds OR fetch errors
+🟢 Green	Successful api-response received within the last 30 seconds (not modified content is also regarded as successful api response)
+🟡 Yellow	No successful api response received for 30–90 seconds
+🔴 Red	No successful api response for 90+ seconds OR fetch errors
 
 
 ## Architectural notes
