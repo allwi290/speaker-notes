@@ -30,7 +30,17 @@ export default class PredictionsPanel {
     }
 
     const now = getNow();
-    for (const pred of predictions) {
+    const WINDOW_MS = 10 * 60 * 1000; // ±10 minutes
+    const visible = predictions.filter(p =>
+      p.predictedTimeMs >= now - WINDOW_MS && p.predictedTimeMs <= now + WINDOW_MS
+    );
+
+    if (visible.length === 0) {
+      this.#showEmpty();
+      return;
+    }
+
+    for (const pred of visible) {
       const row = document.createElement('div');
       row.className = 'prediction-row';
       row.dataset.id = pred.id;

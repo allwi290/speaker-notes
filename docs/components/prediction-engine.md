@@ -81,7 +81,7 @@ export default class PredictionEngine {
 
 ## Prediction Algorithm Detail
 
-```
+```text
 Given:
   Runner A has passed control C₁ at cumulative split time S_A₁
   Reference runner B (fastest to have passed C₂) has:
@@ -105,6 +105,7 @@ When the target control is the last split control, a finish prediction is genera
 ### Confidence
 
 Confidence is derived from how consistent the runner's pace ratio has been across previous controls:
+
 - If only 1 split is available: confidence = `"± minutes"` (low)
 - If 2+ splits: confidence = standard deviation of per-leg pace ratios, converted to a time range
 
