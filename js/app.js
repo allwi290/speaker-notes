@@ -118,6 +118,34 @@ export default class App {
       this.#showDemoControls();
     }
 
+    // Audio toggle button
+    const audioBtn = this.#root.querySelector('#audio-btn');
+    if (audioBtn) {
+      audioBtn.addEventListener('click', () => {
+        const muted = this.#notifier.toggleMute();
+        audioBtn.textContent = muted ? '🔕' : '🔔';
+        audioBtn.classList.toggle('app-header__btn--muted', muted);
+        audioBtn.title = muted ? 'Unmute audio' : 'Mute audio';
+      });
+    }
+
+    // Fullscreen toggle button
+    const fsBtn = this.#root.querySelector('#fullscreen-btn');
+    if (fsBtn) {
+      fsBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+      document.addEventListener('fullscreenchange', () => {
+        const isFs = !!document.fullscreenElement;
+        fsBtn.textContent = isFs ? '⛶' : '⛶';
+        fsBtn.title = isFs ? 'Exit fullscreen' : 'Enter fullscreen';
+      });
+    }
+
     // Settings button
     const settingsBtn = this.#root.querySelector('#settings-btn');
     if (settingsBtn) {

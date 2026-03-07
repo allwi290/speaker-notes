@@ -86,7 +86,7 @@ body {
   gap: 16px;
 }
 
-.app-header__settings {
+.app-header__btn {
   background: none;
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
@@ -97,9 +97,14 @@ body {
   transition: color 0.15s, border-color 0.15s;
 }
 
-.app-header__settings:hover {
+.app-header__btn:hover {
   color: var(--color-text);
   border-color: var(--color-text-muted);
+}
+
+.app-header__btn--muted {
+  color: var(--color-text-muted);
+  opacity: 0.5;
 }
 
 /* --- Main panels --- */
