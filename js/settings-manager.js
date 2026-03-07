@@ -14,6 +14,7 @@ const DEFAULTS = {
   topN: 4,
   maxLatestEvents: 10,
   maxPredictions: 5,
+  predictionAlgorithm: 'median',  // 'fastest' | 'median'
 };
 
 export default class SettingsManager {
@@ -82,6 +83,7 @@ export default class SettingsManager {
   get topN()            { return this.#data.topN; }
   get maxLatestEvents() { return this.#data.maxLatestEvents; }
   get maxPredictions()  { return this.#data.maxPredictions; }
+  get predictionAlgorithm() { return this.#data.predictionAlgorithm; }
 
   /* --- Private helpers --- */
 

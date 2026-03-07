@@ -128,8 +128,11 @@ export default class PredictionEngine {
 
       const predId = `${runner.name}|${runner.club}|${targetName}`;
 
-      // Find reference runner: fastest who has passed the target
-      const ref = this.#findReference(allRunners, controls, lastControlIdx, targetIdx, isLastSplit);
+      // Find reference (fastest single runner, or median virtual runner)
+      const algo = this.#settings.predictionAlgorithm ?? 'fastest';
+      const ref = algo === 'median'
+        ? this.#findMedianReference(allRunners, controls, lastControlIdx, targetIdx, isLastSplit)
+        : this.#findReference(allRunners, controls, lastControlIdx, targetIdx, isLastSplit);
       if (!ref) continue;
 
       // Compute prediction
@@ -241,6 +244,86 @@ export default class PredictionEngine {
       }
     }
     return best;
+  }
+
+  /**
+   * Build a virtual reference from the median cumulative times of all
+   * eligible runners at the last and target controls.
+   * @param {Array}  allRunners
+   * @param {Array}  controls
+   * @param {number} lastIdx
+   * @param {number} targetIdx    — -1 for finish
+   * @param {boolean} isFinish
+   * @returns {{ runner: { name: string, splits: Map, status: number, result: * }, refTimeToLast: number, refTimeToTarget: number }|null}
+   */
+  #findMedianReference(allRunners, controls, lastIdx, targetIdx, isFinish) {
+    const lastTimes = [];
+    const targetTimes = [];
+    const eligible = [];
+
+    for (const r of allRunners) {
+      const lastSplit = r.splits.get(controls[lastIdx].code);
+      if (!lastSplit || lastSplit.status !== 0 || lastSplit.time <= 0) continue;
+
+      let targetTime;
+      if (isFinish) {
+        if (r.status !== 0 || !r.result) continue;
+        targetTime = typeof r.result === 'number' ? r.result : Number(r.result);
+        if (Number.isNaN(targetTime) || targetTime <= 0) continue;
+      } else {
+        const targetSplit = r.splits.get(controls[targetIdx].code);
+        if (!targetSplit || targetSplit.status !== 0 || targetSplit.time <= 0) continue;
+        targetTime = targetSplit.time;
+      }
+
+      lastTimes.push(lastSplit.time);
+      targetTimes.push(targetTime);
+      eligible.push(r);
+    }
+
+    if (eligible.length === 0) return null;
+
+    lastTimes.sort((a, b) => a - b);
+    targetTimes.sort((a, b) => a - b);
+
+    const mid = Math.floor(lastTimes.length / 2);
+    const medianLast   = lastTimes.length % 2 === 1
+      ? lastTimes[mid]
+      : (lastTimes[mid - 1] + lastTimes[mid]) / 2;
+    const medianTarget = targetTimes.length % 2 === 1
+      ? targetTimes[mid]
+      : (targetTimes[mid - 1] + targetTimes[mid]) / 2;
+
+    // Build a virtual runner with synthetic median splits for confidence calc
+    const virtualSplits = new Map();
+    for (let i = 0; i <= lastIdx; i++) {
+      const code = controls[i].code;
+      const times = [];
+      for (const r of eligible) {
+        const s = r.splits.get(code);
+        if (s && s.status === 0 && s.time > 0) times.push(s.time);
+      }
+      if (times.length > 0) {
+        times.sort((a, b) => a - b);
+        const m = Math.floor(times.length / 2);
+        const medTime = times.length % 2 === 1 ? times[m] : (times[m - 1] + times[m]) / 2;
+        virtualSplits.set(code, { time: medTime, status: 0, place: '', timeplus: '' });
+      }
+    }
+
+    const virtualRunner = {
+      name: `Median (n=${eligible.length})`,
+      club: '',
+      splits: virtualSplits,
+      status: 0,
+      result: null,
+    };
+
+    return {
+      runner: virtualRunner,
+      refTimeToLast: medianLast,
+      refTimeToTarget: medianTarget,
+    };
   }
 
   /**
