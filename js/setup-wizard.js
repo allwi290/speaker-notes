@@ -175,10 +175,13 @@ export default class SetupWizard {
     } else if (step === 'classes') {
       this.#saveClasses();
       this.#showStep(2);
-      this.#renderClubs();
+      this.#loadClubs();
 
     } else if (step === 'clubs') {
-      this.#settings.set('followedClubs', [...this.#clubs]);
+      const cbs = this.#stepsEl.clubs.querySelectorAll('input[type="checkbox"]');
+      const selected = [...cbs].filter(cb => cb.checked).map(cb => cb.value);
+      this.#settings.set('followedClubs', selected);
+      this.#clubs = selected;
       this.#showStep(3);
       this.#renderTopN();
 
@@ -325,68 +328,78 @@ export default class SetupWizard {
    * Step 3: Clubs
    * ----------------------------------------------------------------*/
 
-  #renderClubs() {
+  async #loadClubs() {
     const body = this.#stepBody(this.#stepsEl.clubs);
-    body.innerHTML = '';
+    body.innerHTML = '<p>Loading clubs from competition data…</p>';
 
-    const desc = document.createElement('p');
-    desc.textContent = 'Add clubs to highlight. These runners always appear in latest events regardless of ranking.';
-    body.appendChild(desc);
+    try {
+      const followed = this.#settings.followedClasses;
+      const classNames = followed ?? this.#classes;
 
-    // Input row
-    const inputRow = document.createElement('div');
-    inputRow.className = 'wizard__club-input-row';
+      const results = await Promise.all(
+        classNames.map(cls =>
+          this.#api.getClassResults(this.#selectedCompId, cls).catch(() => null)
+        )
+      );
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'Club name…';
-
-    const addBtn = document.createElement('button');
-    addBtn.textContent = 'Add';
-
-    inputRow.append(input, addBtn);
-    body.appendChild(inputRow);
-
-    // Tags
-    const tagsUl = document.createElement('ul');
-    tagsUl.className = 'wizard__tags';
-    body.appendChild(tagsUl);
-
-    const renderTags = () => {
-      tagsUl.innerHTML = '';
-      for (const club of this.#clubs) {
-        const li = document.createElement('li');
-        li.className = 'wizard__tag';
-
-        const text = document.createTextNode(club);
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'wizard__tag-remove';
-        removeBtn.textContent = '×';
-        removeBtn.addEventListener('click', () => {
-          this.#clubs = this.#clubs.filter(c => c !== club);
-          renderTags();
-        });
-
-        li.append(text, removeBtn);
-        tagsUl.appendChild(li);
+      const clubSet = new Set();
+      for (const res of results) {
+        if (!res?.results) continue;
+        for (const runner of res.results) {
+          if (runner.club) clubSet.add(runner.club);
+        }
       }
-    };
 
-    const addClub = () => {
-      const name = input.value.trim();
-      if (name && !this.#clubs.includes(name)) {
-        this.#clubs.push(name);
-        input.value = '';
-        renderTags();
+      const allClubs = [...clubSet].sort((a, b) => a.localeCompare(b, 'sv'));
+
+      body.innerHTML = '';
+
+      if (allClubs.length === 0) {
+        const msg = document.createElement('p');
+        msg.className = 'wizard__empty';
+        msg.textContent = 'No clubs found in competition data.';
+        body.appendChild(msg);
+        return;
       }
-    };
 
-    addBtn.addEventListener('click', addClub);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') addClub();
-    });
+      const desc = document.createElement('p');
+      desc.textContent = 'Select clubs to highlight. These runners always appear in latest events regardless of ranking.';
+      body.appendChild(desc);
 
-    renderTags();
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'wizard__toggle-all';
+      toggleBtn.textContent = 'Select All';
+      toggleBtn.addEventListener('click', () => {
+        const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
+        const anyUnchecked = [...checkboxes].some(cb => !cb.checked);
+        checkboxes.forEach(cb => { cb.checked = anyUnchecked; });
+        toggleBtn.textContent = anyUnchecked ? 'Deselect All' : 'Select All';
+      });
+      body.appendChild(toggleBtn);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'wizard__classes';
+
+      for (const club of allClubs) {
+        const label = document.createElement('label');
+        label.className = 'wizard__class-label';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = club;
+        cb.checked = this.#clubs.includes(club);
+
+        label.append(cb, document.createTextNode(` ${club}`));
+        wrapper.appendChild(label);
+      }
+      body.appendChild(wrapper);
+    } catch (err) {
+      body.innerHTML = '';
+      const p = document.createElement('p');
+      p.className = 'wizard__empty';
+      p.textContent = `Failed to load clubs: ${err.message}`;
+      body.appendChild(p);
+    }
   }
 
   /* ------------------------------------------------------------------
