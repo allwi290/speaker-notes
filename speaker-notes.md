@@ -25,6 +25,7 @@ Runner              Bruno Godefroy
 Club                OK Ravinen
 Control             Radio K65
 Place at control    2
+Runner time         00:04:29
 Time behind leader  +0:11
 
 Add a visual indicator (e.g., colored border or club logo) for club-followed runners and confirm they bypass the "top N" filter. They should not bypass the prediction events
@@ -69,7 +70,7 @@ A finish prediction should be included when its relevant
 
 ## User workflows
 
-The user starts to select which competition he or she should follow. Only competitions for the current date should be shown. Then selects which classes he or she should follow, defaults to all classes. The selects additional clubs to follow, none selected as default. This is used to show all the events for specific club independent of the runners position in the competition
+The user starts to select which competition he or she should follow. Only competitions for the current date should be shown. Then selects which classes he or she should follow, defaults to all classes. Then selects additional clubs to follow from a list of all clubs that have runners in the competition (fetched by querying class results for all selected classes), sorted alphabetically and presented as checkboxes, none selected as default. This is used to show all the events for specific club independent of the runners position in the competition
 
 ## Surveillance of internet connection
 

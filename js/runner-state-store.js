@@ -280,6 +280,7 @@ export default class RunnerStateStore {
         controlName: 'Finish',
         splitPlace: curr.place,
         splitTimeplus: curr.timeplus,
+        splitTime: curr.result,
       });
     }
 
@@ -311,6 +312,7 @@ export default class RunnerStateStore {
           controlName: ctrl.name,
           splitPlace: currSplit.place,
           splitTimeplus: currSplit.timeplus,
+          splitTime: currSplit.time,
         });
       }
     }

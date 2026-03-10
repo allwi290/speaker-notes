@@ -17,6 +17,7 @@ import { getNow } from './clock.js';
  * @property {string}  controlName
  * @property {number|string} place
  * @property {string}  timeplus       — formatted
+ * @property {string}  splitTime      — formatted runner cumulative time (HH:MM:SS)
  * @property {boolean} clubFollowed
  * @property {number}  [status]
  */
@@ -37,13 +38,21 @@ const STATUS_LABELS = {
  */
 export function formatTime(cs) {
   if (cs == null || cs === '') return '';
+  const s = String(cs);
+  // Already formatted as M:SS, MM:SS, or H:MM:SS — normalise to HH:MM:SS
+  if (s.includes(':')) {
+    const parts = s.split(':');
+    if (parts.length === 2) return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    if (parts.length === 3) return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
+    return s;
+  }
   const n = Number(cs);
   if (Number.isNaN(n) || n === 0) return '';
   const totalSeconds = Math.floor(n / 100);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const sec = totalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
 /**
@@ -192,6 +201,10 @@ export default class EventDetector {
       ? formatTimeplus(change.runner.timeplus)
       : formatTimeplus(change.splitTimeplus);
 
+    const splitTime = change.type === 'finish'
+      ? formatTime(change.runner.result)
+      : formatTime(change.splitTime);
+
     return {
       id: `${getNow()}-${change.runner.name}-${change.controlCode ?? change.type}`,
       timestamp: getNow(),
@@ -201,6 +214,7 @@ export default class EventDetector {
       type: change.type,
       controlName,
       place,
+      splitTime,
       timeplus: tp,
       clubFollowed: isClub,
       status: change.runner.status,

@@ -99,6 +99,7 @@ export default class LatestEventsPanel {
       <span class="event-row__club">${esc(evt.club)}</span>
       <span class="event-row__control">${esc(evt.controlName)}</span>
       <span class="event-row__place">${esc(String(evt.place ?? ''))}</span>
+      <span class="event-row__splittime">${esc(evt.splitTime ?? '')}</span>
       <span class="event-row__timeplus">${esc(evt.timeplus ?? '')}</span>
     `;
     return row;

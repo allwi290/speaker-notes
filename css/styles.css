@@ -31,7 +31,7 @@
   --panel-padding:      12px;
   --radius:             6px;
 
-  --event-cols:         10ch 10ch 1fr 1fr 12ch 6ch 8ch;
+  --event-cols:         10ch 10ch 1fr 1fr 12ch 6ch 10ch 8ch;
   --prediction-cols:    10ch 10ch 1fr 1fr 12ch 10ch;
 }
 
@@ -152,11 +152,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
+  scrollbar-gutter: stable;
 }
 
 .panel__list {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   min-height: 0;
 }
 
@@ -196,6 +198,10 @@ body {
 .event-row__timeplus {
   font-variant-numeric: tabular-nums;
   color: var(--color-yellow);
+}
+
+.event-row__splittime {
+  font-variant-numeric: tabular-nums;
 }
 
 /* New-event slide-in */
