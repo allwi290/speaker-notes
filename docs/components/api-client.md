@@ -102,9 +102,9 @@ export default class ApiClient {
 
 ## Dependencies
 
-| Module | Relationship |
-|---|---|
-| _none_ | standalone; uses `fetch` API |
+| Module    | Relationship                    |
+|-----------|-------------------------------- |
+| _none_    | standalone; uses `fetch` API    |
 
 ## Notes
 

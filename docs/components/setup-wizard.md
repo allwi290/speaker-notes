@@ -81,6 +81,6 @@ export default class SetupWizard {
 ## Dependencies
 
 | Module | Relationship |
-|---|---|
+| --- | --- |
 | ApiClient | fetches competitions and classes |
 | SettingsManager | persists selections |
