@@ -144,7 +144,7 @@ body {
 
 .panel__header {
   flex-shrink: 0;
-  font-size: var(--font-size-header);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text-muted);
   background: var(--color-surface-alt);
@@ -153,6 +153,10 @@ body {
   top: 0;
   z-index: 2;
   scrollbar-gutter: stable;
+}
+
+.panel__header > span {
+  font-size: var(--font-size-header);
 }
 
 .panel__list {
