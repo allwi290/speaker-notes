@@ -91,6 +91,7 @@ export default class LatestEventsPanel {
     if (animate) row.classList.add('event-row--new');
     if (evt.clubFollowed) row.classList.add('event-row--club');
     if (evt.type === 'status_change') row.classList.add('event-row--status');
+    if (evt.type === 'finish') row.classList.add('event-row--finish');
 
     row.innerHTML = `
       <span class="event-row__time">${formatWallClock(evt.timestamp)}</span>

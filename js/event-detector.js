@@ -23,12 +23,12 @@ import { getNow } from './clock.js';
  */
 
 const STATUS_LABELS = {
-  1: 'DNS',
-  2: 'DNF',
-  3: 'MP',
-  4: 'DSQ',
-  5: 'OT',
-  11: 'WO',
+  1: 'Did Not Start',
+  2: 'Did Not Finish',
+  3: 'Mispunch',
+  4: 'Disqualified',
+  5: 'Overtime',
+  11: 'Walkover',
 };
 
 /**

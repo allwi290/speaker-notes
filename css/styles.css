@@ -142,7 +142,7 @@ body {
 .panel__title {
   font-size: var(--font-size-title);
   font-weight: 600;
-  padding: 10px 16px 6px;
+  padding: 6px 16px 3px;
   color: var(--color-accent);
   flex-shrink: 0;
 }
@@ -157,6 +157,13 @@ body {
   top: 0;
   z-index: 2;
   scrollbar-gutter: stable;
+}
+
+.panel__header.event-row,
+.panel__header.prediction-row {
+  min-height: 2.1rem;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 .panel__header > span {
@@ -235,15 +242,41 @@ body {
   padding-left: 12px;
 }
 
-/* Status change (DNF, DSQ, MP) */
+/* Finish event highlight */
+.event-row--finish {
+  background: rgba(46, 204, 113, 0.10);
+}
+
+.event-row--finish .event-row__runner {
+  color: var(--color-green);
+  font-weight: 700;
+}
+
+.event-row--finish .event-row__control {
+  color: var(--color-green);
+}
+
+/* Status change (DNS, DNF, MP, DSQ, OT, WO) */
 .event-row--status {
   background: var(--color-status-bg);
 }
 
-.event-row--status .event-row__runner,
-.event-row--status .event-row__timeplus {
+.event-row--status .event-row__runner {
   text-decoration: line-through;
   color: var(--color-text-muted);
+}
+
+.event-row--status .event-row__control {
+  color: var(--color-red);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.event-row--status .event-row__place,
+.event-row--status .event-row__splittime,
+.event-row--status .event-row__timeplus {
+  color: var(--color-text-muted);
+  opacity: 0.4;
 }
 
 /* --- Prediction Row (6-column grid) --- */
