@@ -269,6 +269,13 @@ export default class App {
       speedGroup.appendChild(btn);
     }
 
+    // Pause button
+    const pauseBtn = document.createElement('button');
+    pauseBtn.className = 'demo-controls__pause-btn';
+    pauseBtn.textContent = '⏸';
+    pauseBtn.title = 'Pause demo';
+    pauseBtn.addEventListener('click', () => this.#toggleDemoPause());
+
     // Progress bar
     const progressWrap = document.createElement('div');
     progressWrap.className = 'demo-controls__progress-wrap';
@@ -287,7 +294,7 @@ export default class App {
     status.className = 'demo-controls__status';
     status.textContent = '';
 
-    bar.append(label, speedGroup, progressWrap, timeDisplay, status);
+    bar.append(label, pauseBtn, speedGroup, progressWrap, timeDisplay, status);
 
     // Insert after header
     const header = this.#root.querySelector('.app-header');
@@ -297,7 +304,7 @@ export default class App {
       this.#root.prepend(bar);
     }
 
-    this.#demoControls = { bar, speedGroup, progressBar, timeDisplay, status };
+    this.#demoControls = { bar, pauseBtn, speedGroup, progressBar, timeDisplay, status };
   }
 
   #showDemoControls() {
@@ -327,6 +334,22 @@ export default class App {
     this.#demoControls.timeDisplay.textContent =
       `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
     this.#demoControls.status.textContent = `${(progress * 100).toFixed(0)}%`;
+  }
+
+  #toggleDemoPause() {
+    if (!this.#demoControls) return;
+    const btn = this.#demoControls.pauseBtn;
+    if (this.#scheduler.paused) {
+      this.#scheduler.resume();
+      btn.textContent = '⏸';
+      btn.title = 'Pause demo';
+      btn.classList.remove('demo-controls__pause-btn--active');
+    } else {
+      this.#scheduler.pause();
+      btn.textContent = '▶';
+      btn.title = 'Resume demo';
+      btn.classList.add('demo-controls__pause-btn--active');
+    }
   }
 
   /** @param {string} text */

@@ -23,6 +23,9 @@ export default class PollingScheduler {
   /** @type {boolean} */
   #running = false;
 
+  /** @type {boolean} */
+  #paused = false;
+
   /** @type {string[]} */
   #classes = [];
 
@@ -92,6 +95,26 @@ export default class PollingScheduler {
     this.#cycleMs = ms;
   }
 
+  /** @returns {boolean} */
+  get paused() {
+    return this.#paused;
+  }
+
+  /** Pause the polling loop (keeps #running true so resume works). */
+  pause() {
+    this.#paused = true;
+    this.#clearTimeouts();
+  }
+
+  /** Resume a paused polling loop. */
+  resume() {
+    if (!this.#paused) return;
+    this.#paused = false;
+    if (this.#running) {
+      this.#scheduleCycle();
+    }
+  }
+
   /* ------------------------------------------------------------------
    * Internal
    * ----------------------------------------------------------------*/
@@ -130,7 +153,7 @@ export default class PollingScheduler {
     let i = 0;
 
     const next = () => {
-      if (!this.#running || i >= n) {
+      if (!this.#running || this.#paused || i >= n) {
         // All classes polled — schedule next cycle
         const remaining = Math.max(0, cycle - delay * n);
         const tid = setTimeout(() => this.#scheduleCycle(), remaining);

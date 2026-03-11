@@ -8,7 +8,7 @@ To be able to have demo mode, the app needs to have the same opinion about the t
 
 Demo mode is activated via a URL query parameter:
 
-```
+```text
 index.html?demo           → demo mode with default speed (10×)
 index.html?demo&speed=20  → demo mode with 20× playback speed
 ```
@@ -19,7 +19,7 @@ No UI changes are required to enter demo mode.
 
 ### Time Handling — `js/clock.js`
 
-Instead of using `Date.now()` and `new Date()` everywhere in the code base, introduce a centralised clock module that all other modules import.
+Instead of using `Date.now()` and `new Date()` everywhere in the code base, introduce a centralized clock module that all other modules import.
 
 ```javascript
 // js/clock.js
@@ -51,7 +51,7 @@ In normal mode `_offset` is `0` and the functions behave identically to `Date.no
 #### Modules that must replace `Date.now()` / `new Date()` with `getNow()` / `getDate()`
 
 | Module | Change |
-|---|---|
+| --- | --- |
 | `js/event-detector.js` | `Date.now()` → `getNow()` |
 | `js/prediction-engine.js` | `Date.now()` → `getNow()` |
 | `js/connection-monitor.js` | `Date.now()` and `new Date()` → `getNow()` / `getDate()` |
@@ -172,9 +172,9 @@ In demo mode, the polling scheduler runs with a compressed cycle time: `15000 / 
 
 The clock module advances based on the timestamps in the recorded data (via `setNow()`), so all time-dependent logic (prediction expiry, overdue checks, connection monitor age) operates correctly in compressed time.
 
-### End-of-Demo Behaviour
+### End-of-Demo Behavior
 
-When all timeline entries have been served (`DemoApiClient.isComplete === true`), the system continues polling but `getClassResults` returns `null` for every class. The display holds the final state — all events and predictions remain visible. No special "demo complete" message is shown; the application simply stabilises.
+When all timeline entries have been served (`DemoApiClient.isComplete === true`), the system continues polling but `getClassResults` returns `null` for every class. The display holds the final state — all events and predictions remain visible. No special "demo complete" message is shown; the application simply stabilizes.
 
 Optionally, a **loop** mode could be added in the future by resetting `_timelineIndex` to `0` and clearing the `RunnerStateStore`.
 
@@ -185,8 +185,8 @@ When in demo mode, the setup wizard's competition step only shows the competitio
 ## Summary of Changes
 
 | Item | Type | Description |
-|---|---|---|
-| `js/clock.js` | **New file** | Centralised time functions (`getNow`, `getDate`, `setNow`, `resetClock`) |
+| --- | --- | --- |
+| `js/clock.js` | **New file** | Centralized time functions (`getNow`, `getDate`, `setNow`, `resetClock`) |
 | `js/demo-api-client.js` | **New file** | Pre-recorded data API client with `fromBundle()` and `fromManifest()` factory methods |
 | `data/{compId}/manifest.json` | **New file** | Manifest describing recorded data and replay timeline (file references) |
 | `data/{compId}/bundle.json.gz` | **New file** | Gzipped JSON bundle with inline data (~36 MB for 7,676 entries) |

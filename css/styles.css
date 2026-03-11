@@ -618,6 +618,28 @@ body {
   gap: 0.3rem;
 }
 
+.demo-controls__pause-btn {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.demo-controls__pause-btn:hover {
+  background: var(--color-border);
+}
+
+.demo-controls__pause-btn--active {
+  background: #d4a017;
+  border-color: #d4a017;
+  color: #000;
+}
+
 .demo-controls__speed-btn {
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--color-border);
