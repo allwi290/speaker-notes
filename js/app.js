@@ -179,6 +179,8 @@ export default class App {
   /* --- Private --- */
 
   #startLive() {
+    this.#updateCompName();
+
     // In demo mode, compress the polling cycle
     if (this.#demoMode) {
       this.#scheduler.setCycleMs(Math.floor(15000 / this.#demoSpeed));
@@ -237,6 +239,11 @@ export default class App {
     this.#scheduler.refresh()
       .catch(err => console.error('Failed to refresh scheduler:', err));
     this.#startLive();
+  }
+
+  #updateCompName() {
+    const el = this.#root.querySelector('#comp-name');
+    if (el) el.textContent = this.#settings.compName ? `— ${this.#settings.compName}` : '';
   }
 
   /* --- Demo Controls --- */

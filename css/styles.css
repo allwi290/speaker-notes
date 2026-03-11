@@ -80,6 +80,11 @@ body {
   letter-spacing: 0.5px;
 }
 
+.app-header__comp-name {
+  color: var(--color-text);
+  margin-left: 8px;
+}
+
 .app-header__right {
   display: flex;
   align-items: center;
