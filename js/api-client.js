@@ -96,8 +96,10 @@ export default class ApiClient {
       class: className,
       unformattedTimes: 'true',
     });
-    const lastHash = this.#hashes.get(hashKey);
-    if (lastHash) params.set('last_hash', lastHash);
+    if (!options.skipCache) {
+      const lastHash = this.#hashes.get(hashKey);
+      if (lastHash) params.set('last_hash', lastHash);
+    }
 
     const data = await this.#request(params, hashKey, options.signal);
     if (data === null) return null;

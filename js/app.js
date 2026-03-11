@@ -151,7 +151,10 @@ export default class App {
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
         this.#scheduler.stop();
-        this.#wizard.open(() => this.#onSetupComplete());
+        this.#wizard.open(
+          () => this.#onSetupComplete(),
+          () => this.#startLive()
+        );
       });
     }
 

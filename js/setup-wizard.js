@@ -21,6 +21,9 @@ export default class SetupWizard {
   /** @type {(() => void)|null} */
   #onComplete = null;
 
+  /** @type {(() => void)|null} */
+  #onCancel = null;
+
   /** @type {number} */
   #currentStep = 0;
 
@@ -51,9 +54,11 @@ export default class SetupWizard {
   /**
    * Show the wizard overlay.
    * @param {() => void} onComplete
+   * @param {(() => void)|null} [onCancel]
    */
-  open(onComplete) {
+  open(onComplete, onCancel = null) {
     this.#onComplete = onComplete;
+    this.#onCancel = onCancel;
     this.#currentStep = 0;
     this.#prefill();
     this.#buildDOM();
@@ -104,6 +109,14 @@ export default class SetupWizard {
     this.#navNextBtn.textContent = 'Next';
     this.#navNextBtn.addEventListener('click', () => this.#goNext());
 
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'wizard__btn wizard__close-btn';
+    cancelBtn.textContent = '✕';
+    cancelBtn.title = 'Close';
+    cancelBtn.setAttribute('aria-label', 'Close');
+    cancelBtn.addEventListener('click', () => this.#cancel());
+
+    this.#dialogEl.appendChild(cancelBtn);
     nav.append(this.#navBackBtn, this.#navNextBtn);
 
     for (const key of STEPS) {
@@ -160,6 +173,11 @@ export default class SetupWizard {
     if (this.#currentStep > 0) {
       this.#showStep(this.#currentStep - 1);
     }
+  }
+
+  #cancel() {
+    this.close();
+    if (this.#onCancel) this.#onCancel();
   }
 
   #goNext() {
@@ -338,7 +356,7 @@ export default class SetupWizard {
 
       const results = await Promise.all(
         classNames.map(cls =>
-          this.#api.getClassResults(this.#selectedCompId, cls).catch(() => null)
+          this.#api.getClassResults(this.#selectedCompId, cls, { skipCache: true }).catch(() => null)
         )
       );
 

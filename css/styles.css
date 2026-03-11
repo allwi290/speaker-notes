@@ -145,7 +145,6 @@ body {
 .panel__header {
   flex-shrink: 0;
   font-size: var(--font-size-base);
-  font-weight: 600;
   color: var(--color-text-muted);
   background: var(--color-surface-alt);
   border-bottom: 1px solid var(--color-border);
@@ -157,6 +156,7 @@ body {
 
 .panel__header > span {
   font-size: var(--font-size-header);
+  font-weight: 600;
 }
 
 .panel__list {
@@ -349,6 +349,27 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.wizard__close-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 3;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  transition: color 0.15s, background 0.15s;
+}
+
+.wizard__close-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-alt);
 }
 
 .wizard__step {
