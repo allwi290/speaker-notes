@@ -10,11 +10,25 @@ export default class LatestEventsPanel {
   /** @type {HTMLElement} */
   #container;
 
+  /** @type {((evt: import('./event-detector.js').LatestEvent) => void)|null} */
+  #onClick = null;
+
+  /** @type {Map<string, import('./event-detector.js').LatestEvent>} */
+  #eventMap = new Map();
+
   /**
    * @param {HTMLElement} containerEl — the .panel__list element
    */
   constructor(containerEl) {
     this.#container = containerEl;
+  }
+
+  /**
+   * Set a callback for when a row is clicked.
+   * @param {(evt: import('./event-detector.js').LatestEvent) => void} fn
+   */
+  set onClick(fn) {
+    this.#onClick = fn;
   }
 
   /**
@@ -103,6 +117,11 @@ export default class LatestEventsPanel {
       <span class="event-row__splittime">${esc(evt.splitTime ?? '')}</span>
       <span class="event-row__timeplus">${esc(evt.timeplus ?? '')}</span>
     `;
+    this.#eventMap.set(evt.id, evt);
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', () => {
+      if (this.#onClick) this.#onClick(evt);
+    });
     return row;
   }
 

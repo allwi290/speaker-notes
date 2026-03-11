@@ -8,7 +8,7 @@ import SettingsManager    from './settings-manager.js';
 import ApiClient          from './api-client.js';
 import DemoApiClient      from './demo-api-client.js';
 import RunnerStateStore   from './runner-state-store.js';
-import EventDetector      from './event-detector.js';
+import EventDetector, { formatTime, formatTimeplus } from './event-detector.js';
 import PredictionEngine   from './prediction-engine.js';
 import AudioNotifier      from './audio-notifier.js';
 import LatestEventsPanel  from './latest-events-panel.js';
@@ -17,6 +17,13 @@ import ConnectionMonitor  from './connection-monitor.js';
 import PollingScheduler   from './polling-scheduler.js';
 import SetupWizard        from './setup-wizard.js';
 import { getNow, setNow } from './clock.js';
+
+/** Escape HTML entities. */
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
 export default class App {
 
@@ -58,6 +65,7 @@ export default class App {
     this.#latestPanel = new LatestEventsPanel(
       rootEl.querySelector('#latest-events .panel__list')
     );
+    this.#latestPanel.onClick = (evt) => this.#showRunnerModal(evt);
     this.#predictionsPanel = new PredictionsPanel(
       rootEl.querySelector('#predictions .panel__list')
     );
@@ -244,6 +252,106 @@ export default class App {
   #updateCompName() {
     const el = this.#root.querySelector('#comp-name');
     if (el) el.textContent = this.#settings.compName ? `— ${this.#settings.compName}` : '';
+  }
+
+  /* --- Runner detail modal --- */
+
+  /**
+   * @param {import('./event-detector.js').LatestEvent} evt
+   */
+  #showRunnerModal(evt) {
+    const key = `${evt.runner}|${evt.club}`;
+    const runner = this.#store.getRunner(evt.className, key);
+    if (!runner) return;
+
+    const controls = this.#store.getSplitControls(evt.className);
+    const predictions = this.#predictor.getPredictions()
+      .filter(p => p.runner === evt.runner && p.club === evt.club);
+
+    // Build modal
+    const overlay = document.createElement('div');
+    overlay.className = 'runner-modal';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'runner-modal__dialog';
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'runner-modal__close';
+    closeBtn.textContent = '\u2715';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'runner-modal__header';
+    header.innerHTML = `
+      <h2>${esc(runner.name)}</h2>
+      <p>${esc(runner.club)} &middot; ${esc(evt.className)}</p>
+      <p class="runner-modal__start">Start: ${formatTime(runner.start)}</p>
+    `;
+
+    // Splits table
+    const table = document.createElement('table');
+    table.className = 'runner-modal__splits';
+    let thead = '<tr><th>Control</th><th>Time</th><th>+/-</th><th>Pos</th></tr>';
+    table.innerHTML = `<thead>${thead}</thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const ctrl of controls) {
+      const split = runner.splits.get(ctrl.code);
+      if (!split || split.status !== 0 || split.time === 0) continue;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(ctrl.name)}</td>
+        <td>${formatTime(split.time)}</td>
+        <td>${formatTimeplus(split.timeplus)}</td>
+        <td>${esc(String(split.place ?? ''))}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    // Finish row
+    if (runner.status === 0 && runner.result) {
+      const tr = document.createElement('tr');
+      tr.className = 'runner-modal__finish-row';
+      tr.innerHTML = `
+        <td><strong>Finish</strong></td>
+        <td><strong>${formatTime(runner.result)}</strong></td>
+        <td><strong>${formatTimeplus(runner.timeplus)}</strong></td>
+        <td><strong>${esc(String(runner.place ?? ''))}</strong></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+
+    // Predictions section
+    let predSection = '';
+    if (predictions.length > 0) {
+      const predRows = predictions.map(p =>
+        `<tr><td>${esc(p.targetControlName)}</td><td>${esc(p.predictedTimeFormatted)}</td><td>${esc(p.confidence)}</td></tr>`
+      ).join('');
+      predSection = `
+        <div class="runner-modal__predictions">
+          <h3>Predictions</h3>
+          <table class="runner-modal__splits">
+            <thead><tr><th>Control</th><th>Predicted</th><th>Confidence</th></tr></thead>
+            <tbody>${predRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    dialog.append(closeBtn, header, table);
+    if (predSection) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = predSection;
+      dialog.appendChild(tmp.firstElementChild);
+    }
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
   }
 
   /* --- Demo Controls --- */

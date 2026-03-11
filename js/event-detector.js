@@ -39,11 +39,15 @@ const STATUS_LABELS = {
 export function formatTime(cs) {
   if (cs == null || cs === '') return '';
   const s = String(cs);
-  // Already formatted as M:SS, MM:SS, or H:MM:SS — normalise to HH:MM:SS
+  // Already formatted as M:SS, MM:SS, or H:MM:SS
   if (s.includes(':')) {
     const parts = s.split(':');
-    if (parts.length === 2) return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-    if (parts.length === 3) return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
+    if (parts.length === 2) return `${parseInt(parts[0], 10)}:${parts[1].padStart(2, '0')}`;
+    if (parts.length === 3) {
+      const h = parseInt(parts[0], 10);
+      if (h > 0) return `${h}:${parts[1].padStart(2, '0')}:${parts[2].padStart(2, '0')}`;
+      return `${parseInt(parts[1], 10)}:${parts[2].padStart(2, '0')}`;
+    }
     return s;
   }
   const n = Number(cs);
@@ -52,7 +56,10 @@ export function formatTime(cs) {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const sec = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  if (h > 0) {
+    return `${String(h)}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+  return `${String(m)}:${String(sec).padStart(2, '0')}`;
 }
 
 /**
