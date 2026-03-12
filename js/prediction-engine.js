@@ -77,12 +77,11 @@ export default class PredictionEngine {
 
   /**
    * Recalculate predictions for a class.
+   * Always predicts finish time for all runners with at least one split.
    * @param {string} className
    */
   updatePredictions(className) {
     const now = getNow();
-    const topN = this.#settings.topN;
-    const topNSet = this.#store.getTopN(className, topN);
     const controls = this.#store.getSplitControls(className);
     const allRunners = this.#store.getRunners(className);
 
@@ -92,51 +91,40 @@ export default class PredictionEngine {
         this.#predictions.delete(id);
         continue;
       }
-      // Fulfilled: runner has now passed the predicted control
+      // Fulfilled: runner has finished
       if (pred.className === className) {
         const runner = this.#store.getRunner(className, `${pred.runner}|${pred.club}`);
-        if (runner) {
-          const split = runner.splits.get(pred.targetControlCode);
-          if (split && split.status === 0 && split.time > 0) {
-            this.#predictions.delete(id);
-            continue;
-          }
-          // Runner finished
-          if (runner.status === 0 && runner.result) {
-            this.#predictions.delete(id);
-          }
+        if (runner && runner.status === 0 && runner.result) {
+          this.#predictions.delete(id);
         }
       }
     }
 
-    // Generate new predictions for top-N runners
-    for (const key of topNSet) {
-      const runner = this.#store.getRunner(className, key);
-      if (!runner) continue;
+    // Generate finish predictions for all runners with at least one split
+    for (const runner of allRunners) {
       // Skip finished runners
       if (runner.status === 0 && runner.result) continue;
+      // Skip DNS/DNF/MP/DSQ/OT/WO
+      if ([1, 2, 3, 4, 5, 11].includes(runner.status)) continue;
 
       const { lastControlIdx } = this.#findLastPassedControl(runner, controls);
       if (lastControlIdx === -1) continue; // no splits yet
 
-      // Determine target control (next control, or finish)
-      const isLastSplit = lastControlIdx === controls.length - 1;
-      const targetIdx = isLastSplit ? -1 : lastControlIdx + 1;
-      const targetCode = isLastSplit ? null : controls[targetIdx].code;
-      const targetName = isLastSplit ? 'Finish' : controls[targetIdx].name;
-
-      const predId = `${runner.name}|${runner.club}|${targetName}`;
+      // Always predict finish
+      const targetCode = null;
+      const targetName = 'Finish';
+      const predId = `${runner.name}|${runner.club}|Finish`;
 
       // Find reference (fastest single runner, or median virtual runner)
       const algo = this.#settings.predictionAlgorithm ?? 'fastest';
       const ref = algo === 'median'
-        ? this.#findMedianReference(allRunners, controls, lastControlIdx, targetIdx, isLastSplit)
-        : this.#findReference(allRunners, controls, lastControlIdx, targetIdx, isLastSplit);
+        ? this.#findMedianReference(allRunners, controls, lastControlIdx, -1, true)
+        : this.#findReference(allRunners, controls, lastControlIdx, -1, true);
       if (!ref) continue;
 
       // Compute prediction
       const prediction = this.#computePrediction(
-        runner, ref, controls, lastControlIdx, targetIdx, isLastSplit, className, targetCode, targetName, predId
+        runner, ref, controls, lastControlIdx, -1, true, className, targetCode, targetName, predId
       );
       if (!prediction) continue;
 
