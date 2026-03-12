@@ -277,14 +277,12 @@ function replayTimeline(timelineData, manifest, algorithmName) {
           lastSeenAt:         getNow(),
           updateCount:        1,
           referenceRunner:    p.referenceRunner,
-          confidence:         p.confidence,
         });
       } else {
         existing.lastPredictedMs  = p.predictedTimeMs;
         existing.lastSeenAt       = getNow();
         existing.updateCount++;
         existing.referenceRunner  = p.referenceRunner;
-        existing.confidence       = p.confidence;
       }
     }
 
@@ -527,7 +525,7 @@ function printReport(algorithmName, { fulfilled, unfulfilled, splitPreds, finish
       console.log(
         `  ${pad(r.className, 10)} ${pad(r.runner, 20)} → ${pad(r.targetControlName, 12)}  ` +
         `predicted=${hhmmss(r.lastPredictedMs)}  actual=${hhmmss(f.actualMs)}  ` +
-        `error=${fmtSec(f.errorMs / 1000)}  updates=${r.updateCount}  conf=${r.confidence}`
+        `error=${fmtSec(f.errorMs / 1000)}  updates=${r.updateCount}`
       );
     }
     console.log('');

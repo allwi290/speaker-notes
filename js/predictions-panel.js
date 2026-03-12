@@ -55,7 +55,6 @@ export default class PredictionsPanel {
         <span class="prediction-row__runner">${esc(pred.runner)}</span>
         <span class="prediction-row__club">${esc(pred.club)}</span>
         <span class="prediction-row__control">${esc(pred.targetControlName)}</span>
-        <span class="prediction-row__confidence">${esc(pred.confidence)}</span>
       `;
       this.#container.appendChild(row);
     }

@@ -32,7 +32,7 @@
   --radius:             6px;
 
   --event-cols:         10ch 10ch 1fr 1fr 12ch 6ch 10ch 8ch;
-  --prediction-cols:    10ch 10ch 1fr 1fr 12ch 10ch;
+  --prediction-cols:    10ch 10ch 1fr 1fr 12ch;
 }
 
 /* --- Reset --- */
@@ -303,11 +303,6 @@ body {
 
 .prediction-row__time {
   font-variant-numeric: tabular-nums;
-}
-
-.prediction-row__confidence {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
 }
 
 /* Overdue prediction */

@@ -20,7 +20,6 @@ const EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
  * @property {number}  predictedTimeMs     — wall-clock epoch ms
  * @property {string}  predictedTimeFormatted
  * @property {string}  referenceRunner
- * @property {string}  confidence
  * @property {number}  createdAt           — epoch ms
  * @property {number}  expiresAt           — epoch ms
  */
@@ -147,7 +146,6 @@ export default class PredictionEngine {
         existing.predictedTimeMs = prediction.predictedTimeMs;
         existing.predictedTimeFormatted = prediction.predictedTimeFormatted;
         existing.referenceRunner = prediction.referenceRunner;
-        existing.confidence = prediction.confidence;
       } else {
         this.#predictions.set(predId, prediction);
       }
@@ -294,27 +292,10 @@ export default class PredictionEngine {
       ? targetTimes[mid]
       : (targetTimes[mid - 1] + targetTimes[mid]) / 2;
 
-    // Build a virtual runner with synthetic median splits for confidence calc
-    const virtualSplits = new Map();
-    for (let i = 0; i <= lastIdx; i++) {
-      const code = controls[i].code;
-      const times = [];
-      for (const r of eligible) {
-        const s = r.splits.get(code);
-        if (s && s.status === 0 && s.time > 0) times.push(s.time);
-      }
-      if (times.length > 0) {
-        times.sort((a, b) => a - b);
-        const m = Math.floor(times.length / 2);
-        const medTime = times.length % 2 === 1 ? times[m] : (times[m - 1] + times[m]) / 2;
-        virtualSplits.set(code, { time: medTime, status: 0, place: '', timeplus: '' });
-      }
-    }
-
     const virtualRunner = {
       name: `Median (n=${eligible.length})`,
       club: '',
-      splits: virtualSplits,
+      splits: new Map(),
       status: 0,
       result: null,
     };
@@ -347,9 +328,6 @@ export default class PredictionEngine {
     const predictedCs = runner.start + predictedSplit;
     const predictedMs = csToWallMs(predictedCs);
 
-    // Confidence
-    const confidence = this.#computeConfidence(runner, ref.runner, controls, lastIdx, paceRatio);
-
     const now = getNow();
     return {
       id: predId,
@@ -361,63 +339,9 @@ export default class PredictionEngine {
       predictedTimeMs: predictedMs,
       predictedTimeFormatted: formatWallClock(predictedMs),
       referenceRunner: ref.runner.name,
-      confidence,
       createdAt: now,
       expiresAt: now + EXPIRY_MS,
     };
   }
 
-  /**
-   * Compute a confidence string based on pace ratio variance.
-   * @param {*} runner
-   * @param {*} refRunner
-   * @param {Array} controls
-   * @param {number} lastIdx
-   * @param {number} overallPaceRatio
-   * @returns {string}
-   */
-  #computeConfidence(runner, refRunner, controls, lastIdx, overallPaceRatio) {
-    // Collect per-leg pace ratios where both runner and ref have data
-    const legRatios = [];
-    for (let i = 0; i <= lastIdx; i++) {
-      const code = controls[i].code;
-      const rSplit = runner.splits.get(code);
-      const bSplit = refRunner.splits.get(code);
-      if (!rSplit || rSplit.status !== 0 || rSplit.time <= 0) continue;
-      if (!bSplit || bSplit.status !== 0 || bSplit.time <= 0) continue;
-
-      if (i === 0) {
-        // First leg: split time is cumulative from start, so it IS the leg time
-        if (bSplit.time > 0) {
-          legRatios.push(rSplit.time / bSplit.time);
-        }
-      } else {
-        // Leg time = cumulative to this control - cumulative to previous
-        const prevCode = controls[i - 1].code;
-        const rPrev = runner.splits.get(prevCode);
-        const bPrev = refRunner.splits.get(prevCode);
-        if (rPrev && rPrev.status === 0 && rPrev.time > 0 &&
-            bPrev && bPrev.status === 0 && bPrev.time > 0) {
-          const rLeg = rSplit.time - rPrev.time;
-          const bLeg = bSplit.time - bPrev.time;
-          if (bLeg > 0 && rLeg > 0) {
-            legRatios.push(rLeg / bLeg);
-          }
-        }
-      }
-    }
-
-    if (legRatios.length < 2) return '± minutes';
-
-    // Standard deviation of leg ratios
-    const mean = legRatios.reduce((a, b) => a + b, 0) / legRatios.length;
-    const variance = legRatios.reduce((a, r) => a + (r - mean) ** 2, 0) / legRatios.length;
-    const stdDev = Math.sqrt(variance);
-
-    // Convert std dev to approximate minutes: stdDev * average leg time in seconds
-    // Rough: estimate ± in minutes based on stdDev
-    const minutes = Math.max(1, Math.round(stdDev * 10));
-    if (minutes <= 1) return '± 1 min';
-    return `± ${minutes} min`;
-  }
 }

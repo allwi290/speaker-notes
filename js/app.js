@@ -331,13 +331,13 @@ export default class App {
     let predSection = '';
     if (predictions.length > 0) {
       const predRows = predictions.map(p =>
-        `<tr><td>${esc(p.targetControlName)}</td><td>${esc(p.predictedTimeFormatted)}</td><td>${esc(p.confidence)}</td></tr>`
+        `<tr><td>${esc(p.targetControlName)}</td><td>${esc(p.predictedTimeFormatted)}</td></tr>`
       ).join('');
       predSection = `
         <div class="runner-modal__predictions">
           <h3>Predictions</h3>
           <table class="runner-modal__splits">
-            <thead><tr><th>Control</th><th>Predicted</th><th>Confidence</th></tr></thead>
+            <thead><tr><th>Control</th><th>Predicted</th></tr></thead>
             <tbody>${predRows}</tbody>
           </table>
         </div>
