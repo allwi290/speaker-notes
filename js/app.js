@@ -265,8 +265,7 @@ export default class App {
     if (!runner) return;
 
     const controls = this.#store.getSplitControls(evt.className);
-    const predictions = this.#predictor.getPredictions()
-      .filter(p => p.runner === evt.runner && p.club === evt.club);
+    const predictions = this.#predictor.getRunnerPredictions(evt.runner, evt.club);
 
     // Build modal
     const overlay = document.createElement('div');

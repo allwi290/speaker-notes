@@ -4,7 +4,7 @@
  * @module prediction-engine
  */
 
-import { formatWallClock } from './event-detector.js';
+import { formatWallClock, formatTime } from './event-detector.js';
 import { getNow, getDate } from './clock.js';
 
 const EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
@@ -95,6 +95,19 @@ export default class PredictionEngine {
       if (pred.className === className) {
         const runner = this.#store.getRunner(className, `${pred.runner}|${pred.club}`);
         if (runner && runner.status === 0 && runner.result) {
+          const actualFinishMs = csToWallMs(runner.start + runner.result);
+          const errorMs = pred.predictedTimeMs - actualFinishMs;
+          const errorCs = Math.round(errorMs / 10);
+          const errorSign = errorCs >= 0 ? '+' : '-';
+          const errorFormatted = errorSign + formatTime(Math.abs(errorCs));
+          console.log(
+            `Prediction result: ${pred.runner} (${pred.club}) [${className}]` +
+            ` | predicted=${pred.predictedTimeFormatted}` +
+            ` | actual=${formatWallClock(actualFinishMs)}` +
+            ` | error=${errorFormatted}` +
+            ` | result=${formatTime(runner.result)}` +
+            ` | ref=${pred.referenceRunner}`
+          );
           this.#predictions.delete(id);
         }
       }
@@ -115,11 +128,14 @@ export default class PredictionEngine {
       const targetName = 'Finish';
       const predId = `${runner.name}|${runner.club}|Finish`;
 
-      // Find reference (fastest single runner, or median virtual runner)
+      // Find reference: try finisher first, fall back to furthest-ahead runner
       const algo = this.#settings.predictionAlgorithm ?? 'fastest';
-      const ref = algo === 'median'
+      let ref = algo === 'median'
         ? this.#findMedianReference(allRunners, controls, lastControlIdx, -1, true)
         : this.#findReference(allRunners, controls, lastControlIdx, -1, true);
+      if (!ref) {
+        ref = this.#findExtrapolatedFinishReference(allRunners, controls, lastControlIdx);
+      }
       if (!ref) continue;
 
       // Compute prediction
@@ -150,6 +166,19 @@ export default class PredictionEngine {
       .filter(p => p.expiresAt > now)
       .sort((a, b) => a.predictedTimeMs - b.predictedTimeMs);
     return preds.slice(0, this.#settings.maxPredictions);
+  }
+
+  /**
+   * Get predictions for a specific runner (not capped).
+   * @param {string} runner
+   * @param {string} club
+   * @returns {Prediction[]}
+   */
+  getRunnerPredictions(runner, club) {
+    const now = getNow();
+    return [...this.#predictions.values()]
+      .filter(p => p.runner === runner && p.club === club && p.expiresAt > now)
+      .sort((a, b) => a.predictedTimeMs - b.predictedTimeMs);
   }
 
   /**
@@ -293,6 +322,62 @@ export default class PredictionEngine {
       refTimeToLast: medianLast,
       refTimeToTarget: medianTarget,
     };
+  }
+
+  /**
+   * Fallback reference when no runner has finished yet.
+   * Finds the runner furthest ahead, then extrapolates their finish time
+   * by scaling proportionally through remaining controls.
+   * @param {Array}  allRunners
+   * @param {Array}  controls
+   * @param {number} lastIdx — the runner's last passed control index
+   * @returns {{ runner: *, refTimeToLast: number, refTimeToTarget: number }|null}
+   */
+  #findExtrapolatedFinishReference(allRunners, controls, lastIdx) {
+    let best = null;
+    let bestFarIdx = -1;
+
+    for (const r of allRunners) {
+      // Reference must have passed the runner's last control
+      const lastSplit = r.splits.get(controls[lastIdx].code);
+      if (!lastSplit || lastSplit.status !== 0 || lastSplit.time <= 0) continue;
+
+      // Already finished? Skip — that case is handled by #findReference
+      if (r.status === 0 && r.result) continue;
+
+      // Find this runner's furthest passed control
+      let farIdx = lastIdx;
+      for (let i = lastIdx + 1; i < controls.length; i++) {
+        const sp = r.splits.get(controls[i].code);
+        if (sp && sp.status === 0 && sp.time > 0) {
+          farIdx = i;
+        }
+      }
+
+      // Must be further ahead than the runner we're predicting for
+      if (farIdx <= lastIdx) continue;
+
+      // Prefer the runner who is furthest ahead (then fastest to that point)
+      const farSplit = r.splits.get(controls[farIdx].code);
+      if (farIdx > bestFarIdx || (farIdx === bestFarIdx && best && farSplit.time < best.refTimeToTarget)) {
+        bestFarIdx = farIdx;
+
+        // Extrapolate finish: scale from furthest known point
+        // totalCheckpoints = controls.length + 1 (splits + finish)
+        // passed checkpoints by reference = farIdx + 1
+        const refTimeToFar = farSplit.time;
+        const totalCheckpoints = controls.length + 1;
+        const passedCheckpoints = farIdx + 1;
+        const estimatedFinish = refTimeToFar * totalCheckpoints / passedCheckpoints;
+
+        best = {
+          runner: r,
+          refTimeToLast: lastSplit.time,
+          refTimeToTarget: estimatedFinish,
+        };
+      }
+    }
+    return best;
   }
 
   /**
