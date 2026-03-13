@@ -101,12 +101,10 @@ export default class PredictionEngine {
           const errorSign = errorCs >= 0 ? '+' : '-';
           const errorFormatted = errorSign + formatTime(Math.abs(errorCs));
           console.log(
-            `Prediction result: ${pred.runner} (${pred.club}) [${className}]` +
-            ` | predicted=${pred.predictedTimeFormatted}` +
+            `Prediction result: ${pred.runner}` +
             ` | actual=${formatWallClock(actualFinishMs)}` +
-            ` | error=${errorFormatted}` +
-            ` | result=${formatTime(runner.result)}` +
-            ` | ref=${pred.referenceRunner}`
+            ` | predicted=${pred.predictedTimeFormatted}` +
+            ` | error=${errorFormatted}`
           );
           this.#predictions.delete(id);
         }
