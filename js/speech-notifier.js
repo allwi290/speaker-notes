@@ -6,7 +6,7 @@
  */
 
 import { getNow } from './clock.js';
-import { formatTime, formatTimeplus } from './event-detector.js';
+import { formatTimeplus } from './event-detector.js';
 
 const MAX_QUEUE = 10;
 const STALE_MS = 2 * 60 * 1000;
@@ -154,23 +154,48 @@ export default class SpeechNotifier {
   }
 
   /**
+   * Format centiseconds as spoken duration, e.g. "12 minutes and 34 seconds".
+   * @param {number|string} cs
+   * @returns {string}
+   */
+  #spokenDuration(cs) {
+    const n = Number(cs);
+    if (Number.isNaN(n) || n === 0) return '';
+    const totalSeconds = Math.floor(Math.abs(n) / 100);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const parts = [];
+    if (h > 0) parts.push(`${h} hour${h !== 1 ? 's' : ''}`);
+    if (m > 0) parts.push(`${m} minute${m !== 1 ? 's' : ''}`);
+    if (s > 0) parts.push(`${s} second${s !== 1 ? 's' : ''}`);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+  }
+
+  /**
    * Build spoken text from event.
    * @param {import('./event-detector.js').LatestEvent} evt
    * @returns {string}
    */
   #buildText(evt) {
+    if (evt.type === 'finish') {
+      if (evt.place === 1 || evt.place === '1') {
+        const time = this.#spokenDuration(evt.splitTime);
+        return `We have a new leader in class ${evt.className}, ${evt.runner} from ${evt.club}, with a time of ${time}`;
+      } else {
+        const tp = this.#spokenDuration(evt.timeplus);
+        const place = evt.place ?? '';
+        return `We have a new runner in ${place} place: ${evt.runner} from ${evt.club}, ${tp} behind the leader.`;
+      }
+    }
+
     const parts = [evt.runner];
     if (evt.club) parts.push(evt.club);
     parts.push(evt.className);
 
-    if (evt.type === 'finish') {
-      parts.push('finish');
-      if (evt.place) parts.push(`place ${evt.place}`);
-      const time = formatTime(evt.splitTime);
-      if (time) parts.push(time);
-      const tp = formatTimeplus(evt.timeplus);
-      if (tp && tp !== '+0:00') parts.push(tp);
-    } else if (evt.type === 'status_change') {
+    if (evt.type === 'status_change') {
       const label = STATUS_LABELS[evt.status] ?? `status ${evt.status}`;
       parts.push(label);
     } else if (evt.type === 'split') {
