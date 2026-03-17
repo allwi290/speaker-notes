@@ -16,6 +16,7 @@ import PredictionsPanel   from './predictions-panel.js';
 import ConnectionMonitor  from './connection-monitor.js';
 import PollingScheduler   from './polling-scheduler.js';
 import SetupWizard        from './setup-wizard.js';
+import SettingsPanel      from './settings-panel.js';
 import SpeechNotifier     from './speech-notifier.js';
 import { getNow, setNow } from './clock.js';
 
@@ -44,6 +45,7 @@ export default class App {
   #monitor;
   #scheduler;
   #wizard;
+  #settingsPanel;
   #speech;
 
   /** Demo mode state */
@@ -121,6 +123,11 @@ export default class App {
       apiClient:   this.#api,
       settings:    this.#settings,
     });
+    this.#settingsPanel = new SettingsPanel({
+      containerEl: this.#root.querySelector('#settings-panel'),
+      apiClient:   this.#api,
+      settings:    this.#settings,
+    });
 
     this.#monitor.start();
 
@@ -168,10 +175,10 @@ export default class App {
       });
     }
 
-    // Settings button
-    const settingsBtn = this.#root.querySelector('#settings-btn');
-    if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
+    // Competition button — opens setup wizard
+    const compBtn = this.#root.querySelector('#comp-btn');
+    if (compBtn) {
+      compBtn.addEventListener('click', () => {
         this.#scheduler.stop();
         this.#wizard.open(
           () => this.#onSetupComplete(),
@@ -179,6 +186,22 @@ export default class App {
         );
       });
     }
+
+    // Settings button — opens settings panel
+    const settingsBtn = this.#root.querySelector('#settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.#settingsPanel.open();
+      });
+    }
+
+    // Refresh scheduler when followed classes change
+    this.#settings.onChange('followedClasses', () => {
+      if (this.#settingsPanel.isOpen) {
+        this.#scheduler.refresh()
+          .catch(err => console.error('Failed to refresh scheduler:', err));
+      }
+    });
 
     // Show empty panels
     this.#latestPanel.clear();

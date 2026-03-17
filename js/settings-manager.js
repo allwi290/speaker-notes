@@ -87,6 +87,9 @@ export default class SettingsManager {
   get maxLatestEvents() { return this.#data.maxLatestEvents; }
   get maxPredictions()  { return this.#data.maxPredictions; }
   get predictionAlgorithm() { return this.#data.predictionAlgorithm; }
+  get speechLang()      { return this.#data.speechLang; }
+  get speechRate()      { return this.#data.speechRate; }
+  get speechEnabled()   { return this.#data.speechEnabled; }
 
   /* --- Private helpers --- */
 
