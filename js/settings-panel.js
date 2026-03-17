@@ -96,6 +96,11 @@ export default class SettingsPanel {
     this.#renderTopN(topNSection.querySelector('.settings-section__body'));
     content.appendChild(topNSection);
 
+    // Section: TTS Provider
+    const ttsSection = this.#createSection('TTS Provider', 'settings-tts');
+    this.#renderTtsProvider(ttsSection.querySelector('.settings-section__body'));
+    content.appendChild(ttsSection);
+
     // Section: Speech
     const speechSection = this.#createSection('Speech', 'settings-speech');
     this.#renderSpeech(speechSection.querySelector('.settings-section__body'));
@@ -320,6 +325,90 @@ export default class SettingsPanel {
       }
     });
     body.appendChild(input);
+  }
+
+  /** @param {HTMLElement} body */
+  #renderTtsProvider(body) {
+    const desc = document.createElement('p');
+    desc.textContent = 'Choose between the built-in browser speech engine or Google Cloud TTS (requires API key).';
+    body.appendChild(desc);
+
+    // Provider dropdown
+    const providerLabel = document.createElement('label');
+    providerLabel.className = 'wizard__label';
+    providerLabel.textContent = 'Provider: ';
+
+    const providerSelect = document.createElement('select');
+    providerSelect.className = 'wizard__select';
+
+    for (const [value, label] of [['browser', 'Browser (built-in)'], ['google', 'Google Cloud TTS']]) {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = label;
+      if (value === (this.#settings.get('ttsProvider') ?? 'browser')) opt.selected = true;
+      providerSelect.appendChild(opt);
+    }
+
+    providerLabel.appendChild(providerSelect);
+    body.appendChild(providerLabel);
+
+    // API key input (shown only when google is selected)
+    const keyWrapper = document.createElement('div');
+
+    const keyLabel = document.createElement('label');
+    keyLabel.className = 'wizard__label';
+    keyLabel.textContent = 'Google API Key: ';
+
+    const keyInput = document.createElement('input');
+    keyInput.type = 'password';
+    keyInput.className = 'wizard__select';
+    keyInput.placeholder = 'Paste your API key here';
+    keyInput.value = this.#settings.get('googleTtsApiKey') ?? '';
+    keyInput.autocomplete = 'off';
+
+    const showBtn = document.createElement('button');
+    showBtn.className = 'wizard__btn';
+    showBtn.textContent = 'Show';
+    showBtn.style.marginLeft = '8px';
+    showBtn.addEventListener('click', () => {
+      const isPassword = keyInput.type === 'password';
+      keyInput.type = isPassword ? 'text' : 'password';
+      showBtn.textContent = isPassword ? 'Hide' : 'Show';
+    });
+
+    const keyRow = document.createElement('div');
+    keyRow.style.display = 'flex';
+    keyRow.style.alignItems = 'center';
+    keyRow.style.gap = '8px';
+    keyRow.append(keyInput, showBtn);
+
+    keyLabel.appendChild(keyRow);
+    keyWrapper.appendChild(keyLabel);
+
+    const hint = document.createElement('p');
+    hint.style.fontSize = 'var(--font-size-sm)';
+    hint.style.color = 'var(--color-text-muted)';
+    hint.style.marginTop = '4px';
+    hint.innerHTML = 'Get a key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color: var(--color-accent)">Google Cloud Console</a>. Enable the "Cloud Text-to-Speech API".';
+    keyWrapper.appendChild(hint);
+
+    body.appendChild(keyWrapper);
+
+    // Toggle API key visibility based on provider
+    const updateKeyVisibility = () => {
+      keyWrapper.style.display = providerSelect.value === 'google' ? 'block' : 'none';
+    };
+    updateKeyVisibility();
+
+    // Event handlers
+    providerSelect.addEventListener('change', () => {
+      this.#settings.set('ttsProvider', providerSelect.value);
+      updateKeyVisibility();
+    });
+
+    keyInput.addEventListener('change', () => {
+      this.#settings.set('googleTtsApiKey', keyInput.value.trim());
+    });
   }
 
   /** @param {HTMLElement} body */

@@ -18,6 +18,7 @@ import PollingScheduler   from './polling-scheduler.js';
 import SetupWizard        from './setup-wizard.js';
 import SettingsPanel      from './settings-panel.js';
 import SpeechNotifier     from './speech-notifier.js';
+import GoogleTtsNotifier  from './google-tts-notifier.js';
 import { getNow, setNow } from './clock.js';
 
 /** Escape HTML entities. */
@@ -47,6 +48,7 @@ export default class App {
   #wizard;
   #settingsPanel;
   #speech;
+  #googleTts;
 
   /** Demo mode state */
   #demoMode = false;
@@ -66,6 +68,7 @@ export default class App {
     this.#predictor = new PredictionEngine({ store: this.#store, settings: this.#settings });
     this.#notifier = new AudioNotifier();
     this.#speech = new SpeechNotifier({ settings: this.#settings });
+    this.#googleTts = new GoogleTtsNotifier({ settings: this.#settings });
 
     this.#latestPanel = new LatestEventsPanel(
       rootEl.querySelector('#latest-events .panel__list')
@@ -151,10 +154,12 @@ export default class App {
     const speechBtn = this.#root.querySelector('#speech-btn');
     if (speechBtn) {
       speechBtn.addEventListener('click', () => {
-        const muted = this.#speech.toggleMute();
-        speechBtn.textContent = muted ? '🤐' : '🗣️';
-        speechBtn.classList.toggle('app-header__btn--muted', muted);
-        speechBtn.title = muted ? 'Enable speech' : 'Disable speech';
+        const browserMuted = this.#speech.toggleMute();
+        // Sync Google TTS mute state with browser speech
+        if (this.#googleTts.muted !== browserMuted) this.#googleTts.toggleMute();
+        speechBtn.textContent = browserMuted ? '🤐' : '🗣️';
+        speechBtn.classList.toggle('app-header__btn--muted', browserMuted);
+        speechBtn.title = browserMuted ? 'Enable speech' : 'Disable speech';
       });
     }
 
@@ -252,7 +257,11 @@ export default class App {
       // 5. Chime & speech
       if (newEvents.length > 0) {
         this.#notifier.chime();
-        this.#speech.speak(newEvents);
+        if (this.#settings.ttsProvider === 'google' && this.#settings.googleTtsApiKey) {
+          this.#googleTts.speak(newEvents);
+        } else {
+          this.#speech.speak(newEvents);
+        }
       }
 
       // 6. Update demo progress if applicable

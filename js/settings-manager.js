@@ -18,6 +18,8 @@ const DEFAULTS = {
   speechLang: 'sv-SE',
   speechEnabled: false,
   speechRate: 1.1,
+  ttsProvider: 'browser',    // 'browser' | 'google'
+  googleTtsApiKey: '',
 };
 
 export default class SettingsManager {
@@ -90,6 +92,8 @@ export default class SettingsManager {
   get speechLang()      { return this.#data.speechLang; }
   get speechRate()      { return this.#data.speechRate; }
   get speechEnabled()   { return this.#data.speechEnabled; }
+  get ttsProvider()     { return this.#data.ttsProvider; }
+  get googleTtsApiKey() { return this.#data.googleTtsApiKey; }
 
   /* --- Private helpers --- */
 
