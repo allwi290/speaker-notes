@@ -16,6 +16,7 @@ import PredictionsPanel   from './predictions-panel.js';
 import ConnectionMonitor  from './connection-monitor.js';
 import PollingScheduler   from './polling-scheduler.js';
 import SetupWizard        from './setup-wizard.js';
+import SpeechNotifier     from './speech-notifier.js';
 import { getNow, setNow } from './clock.js';
 
 /** Escape HTML entities. */
@@ -43,6 +44,7 @@ export default class App {
   #monitor;
   #scheduler;
   #wizard;
+  #speech;
 
   /** Demo mode state */
   #demoMode = false;
@@ -61,6 +63,7 @@ export default class App {
     this.#detector = new EventDetector({ store: this.#store, settings: this.#settings });
     this.#predictor = new PredictionEngine({ store: this.#store, settings: this.#settings });
     this.#notifier = new AudioNotifier();
+    this.#speech = new SpeechNotifier({ settings: this.#settings });
 
     this.#latestPanel = new LatestEventsPanel(
       rootEl.querySelector('#latest-events .panel__list')
@@ -134,6 +137,17 @@ export default class App {
         audioBtn.textContent = muted ? '🔕' : '🔔';
         audioBtn.classList.toggle('app-header__btn--muted', muted);
         audioBtn.title = muted ? 'Unmute audio' : 'Mute audio';
+      });
+    }
+
+    // Speech toggle button
+    const speechBtn = this.#root.querySelector('#speech-btn');
+    if (speechBtn) {
+      speechBtn.addEventListener('click', () => {
+        const muted = this.#speech.toggleMute();
+        speechBtn.textContent = muted ? '🤐' : '🗣️';
+        speechBtn.classList.toggle('app-header__btn--muted', muted);
+        speechBtn.title = muted ? 'Enable speech' : 'Disable speech';
       });
     }
 
@@ -212,9 +226,10 @@ export default class App {
       this.#latestPanel.update(newEvents, this.#detector.getLatestEvents());
       this.#predictionsPanel.render(this.#predictor.getPredictions());
 
-      // 5. Chime
+      // 5. Chime & speech
       if (newEvents.length > 0) {
         this.#notifier.chime();
+        this.#speech.speak(newEvents);
       }
 
       // 6. Update demo progress if applicable

@@ -570,6 +570,41 @@ body {
   text-align: center;
 }
 
+/* Speech settings */
+.wizard__label {
+  display: block;
+  margin-bottom: 16px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.wizard__select {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  width: 100%;
+  max-width: 400px;
+}
+
+.wizard__range {
+  display: inline-block;
+  vertical-align: middle;
+  width: 200px;
+  margin: 0 8px;
+}
+
+.wizard__range-value {
+  display: inline-block;
+  min-width: 2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Nav buttons */
 .wizard__nav {
   display: flex;

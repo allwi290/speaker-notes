@@ -5,7 +5,7 @@
 
 import { getDate } from './clock.js';
 
-const STEPS = ['competition', 'classes', 'clubs', 'topn'];
+const STEPS = ['competition', 'classes', 'clubs', 'topn', 'speech'];
 
 export default class SetupWizard {
 
@@ -94,6 +94,9 @@ export default class SetupWizard {
 
     // Step 4: Top N
     this.#stepsEl.topn = this.#createStep('topn', 'Top N Runners');
+
+    // Step 5: Speech
+    this.#stepsEl.speech = this.#createStep('speech', 'Speech Settings');
 
     // Nav
     const nav = document.createElement('div');
@@ -205,6 +208,11 @@ export default class SetupWizard {
 
     } else if (step === 'topn') {
       this.#saveTopN();
+      this.#showStep(4);
+      this.#renderSpeech();
+
+    } else if (step === 'speech') {
+      this.#saveSpeech();
       this.close();
       if (this.#onComplete) this.#onComplete();
     }
@@ -447,6 +455,122 @@ export default class SetupWizard {
     const val = parseInt(input?.value, 10);
     if (val >= 1 && val <= 20) {
       this.#settings.set('topN', val);
+    }
+  }
+
+  /* ------------------------------------------------------------------
+   * Step 5: Speech
+   * ----------------------------------------------------------------*/
+
+  #renderSpeech() {
+    const body = this.#stepBody(this.#stepsEl.speech);
+    body.innerHTML = '';
+
+    // Language dropdown
+    const langLabel = document.createElement('label');
+    langLabel.textContent = 'Speech language: ';
+    langLabel.className = 'wizard__label';
+
+    const langSelect = document.createElement('select');
+    langSelect.id = 'wizard-speech-lang';
+    langSelect.className = 'wizard__select';
+
+    const currentLang = this.#settings.speechLang ?? 'sv-SE';
+
+    if (typeof speechSynthesis !== 'undefined') {
+      const voices = speechSynthesis.getVoices();
+      const langMap = new Map();
+      for (const v of voices) {
+        if (!langMap.has(v.lang)) {
+          langMap.set(v.lang, v.name);
+        }
+      }
+      // Sort by lang code
+      const langs = [...langMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      for (const [lang, voiceName] of langs) {
+        const opt = document.createElement('option');
+        opt.value = lang;
+        opt.textContent = `${lang} — ${voiceName}`;
+        if (lang === currentLang) opt.selected = true;
+        langSelect.appendChild(opt);
+      }
+      // If no exact match is selected, try prefix match
+      if (langSelect.selectedIndex === -1 && langs.length > 0) {
+        const prefix = currentLang.split('-')[0];
+        for (let i = 0; i < langSelect.options.length; i++) {
+          if (langSelect.options[i].value.startsWith(prefix)) {
+            langSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    } else {
+      const opt = document.createElement('option');
+      opt.value = currentLang;
+      opt.textContent = currentLang;
+      opt.selected = true;
+      langSelect.appendChild(opt);
+    }
+
+    langLabel.appendChild(langSelect);
+    body.appendChild(langLabel);
+
+    // Rate slider
+    const rateLabel = document.createElement('label');
+    rateLabel.className = 'wizard__label';
+    rateLabel.textContent = 'Speech rate: ';
+
+    const rateInput = document.createElement('input');
+    rateInput.type = 'range';
+    rateInput.id = 'wizard-speech-rate';
+    rateInput.className = 'wizard__range';
+    rateInput.min = '0.5';
+    rateInput.max = '2.0';
+    rateInput.step = '0.1';
+    rateInput.value = String(this.#settings.speechRate ?? 1.1);
+
+    const rateValue = document.createElement('span');
+    rateValue.className = 'wizard__range-value';
+    rateValue.textContent = rateInput.value;
+
+    rateInput.addEventListener('input', () => {
+      rateValue.textContent = rateInput.value;
+    });
+
+    rateLabel.append(rateInput, rateValue);
+    body.appendChild(rateLabel);
+
+    // Test button
+    const testBtn = document.createElement('button');
+    testBtn.className = 'wizard__btn';
+    testBtn.textContent = 'Test speech';
+    testBtn.addEventListener('click', () => {
+      if (typeof speechSynthesis === 'undefined') return;
+      speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance('This is a test of the speech synthesis.');
+      utt.lang = langSelect.value;
+      utt.rate = parseFloat(rateInput.value);
+      utt.pitch = 1.0;
+      const voices = speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang === langSelect.value)
+        ?? voices.find(v => v.lang.startsWith(langSelect.value.split('-')[0]));
+      if (voice) utt.voice = voice;
+      speechSynthesis.speak(utt);
+    });
+    body.appendChild(testBtn);
+  }
+
+  #saveSpeech() {
+    const langSelect = this.#stepsEl.speech.querySelector('#wizard-speech-lang');
+    if (langSelect) {
+      this.#settings.set('speechLang', langSelect.value);
+    }
+    const rateInput = this.#stepsEl.speech.querySelector('#wizard-speech-rate');
+    if (rateInput) {
+      const rate = parseFloat(rateInput.value);
+      if (rate >= 0.5 && rate <= 2.0) {
+        this.#settings.set('speechRate', rate);
+      }
     }
   }
 }

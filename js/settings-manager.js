@@ -15,6 +15,9 @@ const DEFAULTS = {
   maxLatestEvents: 10,
   maxPredictions: 5,
   predictionAlgorithm: 'median',  // 'fastest' | 'median'
+  speechLang: 'sv-SE',
+  speechEnabled: false,
+  speechRate: 1.1,
 };
 
 export default class SettingsManager {
