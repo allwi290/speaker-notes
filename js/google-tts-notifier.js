@@ -6,7 +6,7 @@
  */
 
 import { getNow } from './clock.js';
-import { formatTime, formatTimeplus } from './event-detector.js';
+import { buildSpeechText } from './speech-notifier.js';
 
 const API_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 const MAX_QUEUE = 10;
@@ -14,17 +14,8 @@ const STALE_MS = 2 * 60 * 1000;
 
 const TYPE_PRIORITY = { finish: 0, status_change: 1, split: 2 };
 
-const STATUS_LABELS = {
-  1: 'Did Not Start',
-  2: 'Did Not Finish',
-  3: 'Mispunch',
-  4: 'Disqualified',
-  5: 'Overtime',
-  11: 'Walkover',
-};
-
 /** Map speechLang codes to Google Cloud TTS Wavenet voice names. */
-const VOICE_MAP = {
+export const VOICE_MAP = {
   'sv-SE':  { name: 'sv-SE-Wavenet-A', ssmlGender: 'FEMALE' },
   'en-GB':  { name: 'en-GB-Wavenet-B', ssmlGender: 'MALE' },
   'en-US':  { name: 'en-US-Wavenet-D', ssmlGender: 'MALE' },
@@ -120,7 +111,7 @@ export default class GoogleTtsNotifier {
 
     this.#speaking = true;
     const evt = this.#queue.shift();
-    const text = this.#buildText(evt);
+    const text = buildSpeechText(evt, this.#settings.speechLang);
 
     if (!text) {
       this.#processNext();
@@ -209,36 +200,6 @@ export default class GoogleTtsNotifier {
       arr[i] = bytes.charCodeAt(i);
     }
     return new Blob([arr], { type: mimeType });
-  }
-
-  /**
-   * Build spoken text from event.
-   * @param {import('./event-detector.js').LatestEvent} evt
-   * @returns {string}
-   */
-  #buildText(evt) {
-    const parts = [evt.runner];
-    if (evt.club) parts.push(evt.club);
-    parts.push(evt.className);
-
-    if (evt.type === 'finish') {
-      parts.push('finish');
-      if (evt.place) parts.push(`place ${evt.place}`);
-      const time = formatTime(evt.splitTime);
-      if (time) parts.push(time);
-      const tp = formatTimeplus(evt.timeplus);
-      if (tp && tp !== '+0:00') parts.push(tp);
-    } else if (evt.type === 'status_change') {
-      const label = STATUS_LABELS[evt.status] ?? `status ${evt.status}`;
-      parts.push(label);
-    } else if (evt.type === 'split') {
-      if (evt.controlName) parts.push(evt.controlName);
-      if (evt.place) parts.push(`place ${evt.place}`);
-      const tp = formatTimeplus(evt.timeplus);
-      if (tp && tp !== '+0:00') parts.push(tp);
-    }
-
-    return parts.join(', ');
   }
 
   #sortQueue() {

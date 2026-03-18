@@ -6,20 +6,64 @@
  */
 
 import { getNow } from './clock.js';
+import { getLocale, parseToSeconds } from './speech-locales.js';
 
 const MAX_QUEUE = 10;
 const STALE_MS = 2 * 60 * 1000;
 
 const TYPE_PRIORITY = { finish: 0, status_change: 1, split: 2 };
 
-const STATUS_LABELS = {
-  1: 'Did Not Start',
-  2: 'Did Not Finish',
-  3: 'Mispunch',
-  4: 'Disqualified',
-  5: 'Overtime',
-  11: 'Walkover',
-};
+/**
+ * Format a time value as spoken duration in the given language.
+ * Accepts centiseconds (number), or formatted strings like "12:34", "1:02:34", "+1:23".
+ * @param {number|string} val
+ * @param {string} [lang] — BCP-47 language code, defaults to English
+ * @returns {string}
+ */
+export function spokenDuration(val, lang) {
+  const totalSeconds = parseToSeconds(val);
+  if (totalSeconds <= 0) return '';
+  return getLocale(lang).spokenDuration(totalSeconds);
+}
+
+/**
+ * Build spoken text from an event in the given language.
+ * @param {import('./event-detector.js').LatestEvent} evt
+ * @param {string} [lang] — BCP-47 language code, defaults to English
+ * @returns {string}
+ */
+export function buildSpeechText(evt, lang) {
+  const loc = getLocale(lang);
+
+  if (evt.type === 'finish') {
+    if (evt.place === 1 || evt.place === '1') {
+      const time = spokenDuration(evt.splitTime, lang);
+      return loc.finishLeader(evt, time);
+    } else {
+      const tp = spokenDuration(evt.timeplus, lang);
+      const place = evt.place ?? '';
+      return loc.finishOther(evt, tp, place);
+    }
+  }
+
+  if (evt.type === 'status_change') {
+    const label = loc.statusLabels[evt.status] ?? `status ${evt.status}`;
+    return loc.statusChange(evt, label);
+  }
+
+  if (evt.type === 'split') {
+    const control = evt.controlName ? `"${evt.controlName}"` : loc.aControl;
+    if (evt.place === 1 || evt.place === '1') {
+      return loc.splitLeader(evt, control, spokenDuration(evt.splitTime, lang));
+    } else {
+      const tp = spokenDuration(evt.timeplus, lang);
+      const behind = tp ? loc.splitBehind(tp) : '';
+      return loc.splitOther(evt, control, spokenDuration(evt.splitTime, lang), behind);
+    }
+  }
+
+  return loc.fallback(evt);
+}
 
 export default class SpeechNotifier {
 
@@ -130,7 +174,7 @@ export default class SpeechNotifier {
 
     this.#speaking = true;
     const evt = this.#queue.shift();
-    const text = this.#buildText(evt);
+    const text = buildSpeechText(evt, this.#settings.speechLang);
 
     if (!text) {
       this.#processNext();
@@ -150,65 +194,6 @@ export default class SpeechNotifier {
     utterance.addEventListener('error', () => this.#processNext());
 
     speechSynthesis.speak(utterance);
-  }
-
-  /**
-   * Format centiseconds as spoken duration, e.g. "12 minutes and 34 seconds".
-   * @param {number|string} cs
-   * @returns {string}
-   */
-  #spokenDuration(cs) {
-    const n = Number(cs);
-    if (Number.isNaN(n) || n === 0) return '';
-    const totalSeconds = Math.floor(Math.abs(n) / 100);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const parts = [];
-    if (h > 0) parts.push(`${h} hour${h !== 1 ? 's' : ''}`);
-    if (m > 0) parts.push(`${m} minute${m !== 1 ? 's' : ''}`);
-    if (s > 0) parts.push(`${s} second${s !== 1 ? 's' : ''}`);
-    if (parts.length === 0) return '';
-    if (parts.length === 1) return parts[0];
-    return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
-  }
-
-  /**
-   * Build spoken text from event.
-   * @param {import('./event-detector.js').LatestEvent} evt
-   * @returns {string}
-   */
-  #buildText(evt) {
-    if (evt.type === 'finish') {
-      if (evt.place === 1 || evt.place === '1') {
-        const time = this.#spokenDuration(evt.splitTime);
-        return `We have a new leader in class ${evt.className}, ${evt.runner} from ${evt.club}, with a time of ${time}`;
-      } else {
-        const tp = this.#spokenDuration(evt.timeplus);
-        const place = evt.place ?? '';
-        return `We have a new runner in ${place} place: ${evt.runner} from ${evt.club}, ${tp} behind the leader.`;
-      }
-    }
-
-    const parts = [evt.runner];
-    if (evt.club) parts.push(evt.club);
-    parts.push(evt.className);
-
-    if (evt.type === 'status_change') {
-      const label = STATUS_LABELS[evt.status] ?? `status ${evt.status}`;
-      parts.push(label);
-    } else if (evt.type === 'split') {
-      const control = evt.controlName ? `"${evt.controlName}"` : 'a split control';
-      if (evt.place === 1 || evt.place === '1') {
-        return `We have a new fastest time at the split control ${control} in the ${evt.className} class: ${evt.runner} from ${evt.club}, passing in ${evt.splitTime}.`;
-      } else {
-        const tp = this.#spokenDuration(evt.timeplus);
-        const behind = tp ? `, ${tp} behind the leader` : '';
-        return `${evt.runner}, ${evt.club}, ${evt.className}, has passed the split control ${control} in ${evt.splitTime}${behind}.`;
-      }
-    }
-
-    return parts.join(', ');
   }
 
   /** Sort queue by priority then chronological order. */

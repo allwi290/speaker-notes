@@ -4,6 +4,8 @@
  * @module settings-panel
  */
 
+import { VOICE_MAP } from './google-tts-notifier.js';
+
 export default class SettingsPanel {
 
   /** @type {HTMLElement} */
@@ -404,6 +406,8 @@ export default class SettingsPanel {
     providerSelect.addEventListener('change', () => {
       this.#settings.set('ttsProvider', providerSelect.value);
       updateKeyVisibility();
+      // Refresh the speech language dropdown for the new provider
+      if (this._populateLangOptions) this._populateLangOptions();
     });
 
     keyInput.addEventListener('change', () => {
@@ -421,15 +425,23 @@ export default class SettingsPanel {
     const langSelect = document.createElement('select');
     langSelect.className = 'wizard__select';
 
-    if (typeof speechSynthesis !== 'undefined') {
-      const populateVoices = () => {
+    const populateLangOptions = () => {
+      const provider = this.#settings.get('ttsProvider') ?? 'browser';
+      const savedLang = this.#settings.get('speechLang') ?? 'sv-SE';
+      langSelect.innerHTML = '';
+
+      if (provider === 'google') {
+        const langs = Object.keys(VOICE_MAP).sort((a, b) => a.localeCompare(b));
+        for (const lang of langs) {
+          const opt = document.createElement('option');
+          opt.value = lang;
+          opt.textContent = `${lang} — ${VOICE_MAP[lang].name}`;
+          if (lang === savedLang) opt.selected = true;
+          langSelect.appendChild(opt);
+        }
+      } else if (typeof speechSynthesis !== 'undefined') {
         const voices = speechSynthesis.getVoices();
         if (voices.length === 0) return;
-
-        // Read the live setting, not a stale captured value
-        const savedLang = this.#settings.get('speechLang') ?? 'sv-SE';
-
-        langSelect.innerHTML = '';
         const langMap = new Map();
         for (const v of voices) {
           if (!langMap.has(v.lang)) {
@@ -444,29 +456,32 @@ export default class SettingsPanel {
           if (lang === savedLang) opt.selected = true;
           langSelect.appendChild(opt);
         }
-        if (langSelect.selectedIndex === -1 && langs.length > 0) {
-          const prefix = savedLang.split('-')[0];
-          for (let i = 0; i < langSelect.options.length; i++) {
-            if (langSelect.options[i].value.startsWith(prefix)) {
-              langSelect.selectedIndex = i;
-              break;
-            }
+      } else {
+        const opt = document.createElement('option');
+        opt.value = savedLang;
+        opt.textContent = savedLang;
+        opt.selected = true;
+        langSelect.appendChild(opt);
+      }
+
+      if (langSelect.selectedIndex === -1 && langSelect.options.length > 0) {
+        const prefix = savedLang.split('-')[0];
+        for (let i = 0; i < langSelect.options.length; i++) {
+          if (langSelect.options[i].value.startsWith(prefix)) {
+            langSelect.selectedIndex = i;
+            break;
           }
         }
-      };
-      populateVoices();
-      // Only listen once — avoids resetting the dropdown after user changes it
-      if (speechSynthesis.getVoices().length === 0) {
-        speechSynthesis.addEventListener('voiceschanged', populateVoices, { once: true });
       }
-    } else {
-      const currentLang = this.#settings.get('speechLang') ?? 'sv-SE';
-      const opt = document.createElement('option');
-      opt.value = currentLang;
-      opt.textContent = currentLang;
-      opt.selected = true;
-      langSelect.appendChild(opt);
+    };
+
+    populateLangOptions();
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.addEventListener('voiceschanged', populateLangOptions, { once: true });
     }
+
+    // Re-populate when TTS provider changes
+    this._populateLangOptions = populateLangOptions;
 
     langSelect.addEventListener('change', () => {
       this.#settings.set('speechLang', langSelect.value);
@@ -507,18 +522,43 @@ export default class SettingsPanel {
     const testBtn = document.createElement('button');
     testBtn.className = 'wizard__btn';
     testBtn.textContent = 'Test speech';
-    testBtn.addEventListener('click', () => {
-      if (typeof speechSynthesis === 'undefined') return;
-      speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance('This is a test of the speech synthesis.');
-      utt.lang = langSelect.value;
-      utt.rate = parseFloat(rateInput.value);
-      utt.pitch = 1.0;
-      const voices = speechSynthesis.getVoices();
-      const voice = voices.find(v => v.lang === langSelect.value)
-        ?? voices.find(v => v.lang.startsWith(langSelect.value.split('-')[0]));
-      if (voice) utt.voice = voice;
-      speechSynthesis.speak(utt);
+    testBtn.addEventListener('click', async () => {
+      const provider = this.#settings.get('ttsProvider') ?? 'browser';
+      if (provider === 'google') {
+        const apiKey = this.#settings.get('googleTtsApiKey');
+        if (!apiKey) { alert('Please enter a Google API key first.'); return; }
+        const lang = langSelect.value;
+        const voiceConfig = VOICE_MAP[lang] ?? { name: null, ssmlGender: 'NEUTRAL' };
+        try {
+          const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              input: { text: 'This is a test of the Google speech synthesis.' },
+              voice: { languageCode: lang, name: voiceConfig.name, ssmlGender: voiceConfig.ssmlGender },
+              audioConfig: { audioEncoding: 'MP3', speakingRate: parseFloat(rateInput.value) },
+            }),
+          });
+          if (!resp.ok) { alert(`Google TTS error: ${resp.status}`); return; }
+          const data = await resp.json();
+          const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+          audio.play();
+        } catch (err) {
+          alert(`Google TTS failed: ${err.message}`);
+        }
+      } else {
+        if (typeof speechSynthesis === 'undefined') return;
+        speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance('This is a test of the speech synthesis.');
+        utt.lang = langSelect.value;
+        utt.rate = parseFloat(rateInput.value);
+        utt.pitch = 1.0;
+        const voices = speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang === langSelect.value)
+          ?? voices.find(v => v.lang.startsWith(langSelect.value.split('-')[0]));
+        if (voice) utt.voice = voice;
+        speechSynthesis.speak(utt);
+      }
     });
     body.appendChild(testBtn);
   }
