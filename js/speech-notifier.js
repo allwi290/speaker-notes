@@ -6,7 +6,6 @@
  */
 
 import { getNow } from './clock.js';
-import { formatTimeplus } from './event-detector.js';
 
 const MAX_QUEUE = 10;
 const STALE_MS = 2 * 60 * 1000;
@@ -199,10 +198,14 @@ export default class SpeechNotifier {
       const label = STATUS_LABELS[evt.status] ?? `status ${evt.status}`;
       parts.push(label);
     } else if (evt.type === 'split') {
-      if (evt.controlName) parts.push(evt.controlName);
-      if (evt.place) parts.push(`place ${evt.place}`);
-      const tp = formatTimeplus(evt.timeplus);
-      if (tp && tp !== '+0:00') parts.push(tp);
+      const control = evt.controlName ? `"${evt.controlName}"` : 'a split control';
+      if (evt.place === 1 || evt.place === '1') {
+        return `We have a new fastest time at the split control ${control} in the ${evt.className} class: ${evt.runner} from ${evt.club}, passing in ${evt.splitTime}.`;
+      } else {
+        const tp = this.#spokenDuration(evt.timeplus);
+        const behind = tp ? `, ${tp} behind the leader` : '';
+        return `${evt.runner}, ${evt.club}, ${evt.className}, has passed the split control ${control} in ${evt.splitTime}${behind}.`;
+      }
     }
 
     return parts.join(', ');
