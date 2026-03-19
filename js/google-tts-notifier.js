@@ -14,6 +14,30 @@ const STALE_MS = 2 * 60 * 1000;
 
 const TYPE_PRIORITY = { finish: 0, status_change: 1, split: 2 };
 
+/**
+ * Convert plain text to SSML, spelling out standalone 1–3 letter
+ * uppercase abbreviations (e.g. "OK", "IF", "IK") as individual characters.
+ * @param {string} text
+ * @returns {string} SSML string wrapped in <speak> tags
+ */
+export function textToSsml(text) {
+  // Escape XML special characters first
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+
+  // Wrap standalone 1–3 uppercase letter sequences in <say-as> tags.
+  // Uses lookaround to match word boundaries correctly for non-ASCII
+  // letters (Å, Ä, Ö, Æ, Ø, Ü) which JS \b does not treat as word chars.
+  s = s.replace(/(^|[\s,])([A-ZÅÄÖÆØÜ]{1,3})(?=[\s,.:;!?]|$)/g,
+    '$1<say-as interpret-as="characters">$2</say-as>');
+
+  return `<speak>${s}</speak>`;
+}
+
 /** Map speechLang codes to Google Cloud TTS Wavenet voice names. */
 export const VOICE_MAP = {
   'sv-SE':  { name: 'sv-SE-Wavenet-A', ssmlGender: 'FEMALE' },
@@ -157,8 +181,10 @@ export default class GoogleTtsNotifier {
     const lang = this.#settings.speechLang ?? 'sv-SE';
     const voiceConfig = VOICE_MAP[lang] ?? { name: null, ssmlGender: 'NEUTRAL' };
 
+    const ssml = textToSsml(text);
+
     const body = {
-      input: { text },
+      input: { ssml },
       voice: {
         languageCode: lang,
         ssmlGender: voiceConfig.ssmlGender,
