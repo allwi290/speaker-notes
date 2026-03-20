@@ -130,6 +130,7 @@ export default class App {
       containerEl: this.#root.querySelector('#settings-panel'),
       apiClient:   this.#api,
       settings:    this.#settings,
+      googleTts:   this.#googleTts,
     });
 
     this.#monitor.start();

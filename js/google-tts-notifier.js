@@ -120,6 +120,22 @@ export default class GoogleTtsNotifier {
     return this.#muted;
   }
 
+  /**
+   * Synthesize and play arbitrary text via Google TTS.
+   * Useful for test/preview outside the event queue.
+   * @param {string} text
+   * @returns {Promise<void>}
+   */
+  async speakText(text) {
+    const audioContent = await this.#synthesize(text);
+    const blob = this.#base64ToBlob(audioContent, 'audio/mp3');
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.addEventListener('ended', () => URL.revokeObjectURL(url));
+    audio.addEventListener('error', () => URL.revokeObjectURL(url));
+    await audio.play();
+  }
+
   /* --- Private --- */
 
   async #processNext() {
@@ -181,7 +197,7 @@ export default class GoogleTtsNotifier {
     if (!apiKey) throw new Error('No API key configured');
 
     const lang = this.#settings.speechLang ?? 'sv-SE';
-    const voiceConfig = VOICE_MAP[lang] ?? { name: `${lang}-Chirp3-HD-Fenrir` };
+    const voiceConfig = VOICE_MAP[lang] ?? { name: `${lang}-Chirp3-HD-Erinome` };
 
     const ssml = textToSsml(text);
 

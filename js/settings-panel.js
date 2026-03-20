@@ -20,16 +20,21 @@ export default class SettingsPanel {
   /** @type {string[]} */
   #classes = [];
 
+  /** @type {import('./google-tts-notifier.js').default|null} */
+  #googleTts = null;
+
   /**
    * @param {Object} deps
    * @param {HTMLElement} deps.containerEl
    * @param {import('./api-client.js').default} deps.apiClient
    * @param {import('./settings-manager.js').default} deps.settings
+   * @param {import('./google-tts-notifier.js').default} [deps.googleTts]
    */
-  constructor({ containerEl, apiClient, settings }) {
+  constructor({ containerEl, apiClient, settings, googleTts }) {
     this.#container = containerEl;
     this.#api = apiClient;
     this.#settings = settings;
+    this.#googleTts = googleTts ?? null;
   }
 
   /**
@@ -525,31 +530,18 @@ export default class SettingsPanel {
     testBtn.addEventListener('click', async () => {
       const provider = this.#settings.get('ttsProvider') ?? 'browser';
       if (provider === 'google') {
+        if (!this.#googleTts) { alert('Google TTS not available.'); return; }
         const apiKey = this.#settings.get('googleTtsApiKey');
         if (!apiKey) { alert('Please enter a Google API key first.'); return; }
-        const lang = langSelect.value;
-        const voiceConfig = VOICE_MAP[lang] ?? { name: `${lang}-Chirp3-HD-Fenrir` };
         try {
-          const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              input: { text: 'This is a test of the Google speech synthesis.' },
-              voice: { languageCode: lang, name: voiceConfig.name },
-              audioConfig: { audioEncoding: 'MP3', speakingRate: parseFloat(rateInput.value) },
-            }),
-          });
-          if (!resp.ok) { alert(`Google TTS error: ${resp.status}`); return; }
-          const data = await resp.json();
-          const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-          audio.play();
+          await this.#googleTts.speakText('Vi har en ny bästa tid vid radiokontroll K65 i klassen H18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
         } catch (err) {
           alert(`Google TTS failed: ${err.message}`);
         }
       } else {
         if (typeof speechSynthesis === 'undefined') return;
         speechSynthesis.cancel();
-        const utt = new SpeechSynthesisUtterance('This is a test of the speech synthesis.');
+        const utt = new SpeechSynthesisUtterance('Vi har en ny bästa tid vid radiokontroll K65 i klassen H18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
         utt.lang = langSelect.value;
         utt.rate = parseFloat(rateInput.value);
         utt.pitch = 1.0;
