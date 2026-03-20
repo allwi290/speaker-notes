@@ -55,16 +55,29 @@ export default class SetupWizard {
    * Show the wizard overlay.
    * @param {() => void} onComplete
    * @param {(() => void)|null} [onCancel]
+   * @param {{ startStep?: 'competition'|'classes'|'clubs' }} [options]
    */
-  open(onComplete, onCancel = null) {
+  open(onComplete, onCancel = null, { startStep = 'competition' } = {}) {
     this.#onComplete = onComplete;
     this.#onCancel = onCancel;
-    this.#currentStep = 0;
     this.#prefill();
     this.#buildDOM();
     this.#container.classList.add('wizard--open');
-    this.#showStep(0);
-    this.#loadCompetitions();
+
+    const startIdx = STEPS.indexOf(startStep);
+    this.#showStep(startIdx >= 0 ? startIdx : 0);
+
+    if (startStep === 'competition') {
+      this.#loadCompetitions();
+    } else if (startStep === 'classes') {
+      this.#selectedCompId = this.#settings.compId;
+      this.#selectedCompName = this.#settings.compName;
+      this.#loadClasses();
+    } else if (startStep === 'clubs') {
+      this.#selectedCompId = this.#settings.compId;
+      this.#selectedCompName = this.#settings.compName;
+      this.#loadClubsWithClasses();
+    }
   }
 
   /** Close the wizard overlay. */
@@ -410,6 +423,22 @@ export default class SetupWizard {
       p.textContent = `Failed to load clubs: ${err.message}`;
       body.appendChild(p);
     }
+  }
+
+  /**
+   * Load classes first (needed for club extraction), then load clubs.
+   * Used when opening the wizard directly at the clubs step.
+   */
+  async #loadClubsWithClasses() {
+    try {
+      const classes = await this.#api.getClasses(this.#selectedCompId);
+      this.#classes = (classes ?? []).map(c => c.className);
+    } catch (_) {
+      // classes may already be available from settings
+      const followed = this.#settings.followedClasses;
+      if (followed) this.#classes = followed;
+    }
+    this.#loadClubs();
   }
 
 }

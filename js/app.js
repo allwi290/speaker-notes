@@ -128,7 +128,6 @@ export default class App {
     });
     this.#settingsPanel = new SettingsPanel({
       containerEl: this.#root.querySelector('#settings-panel'),
-      apiClient:   this.#api,
       settings:    this.#settings,
       googleTts:   this.#googleTts,
     });
@@ -181,7 +180,7 @@ export default class App {
       });
     }
 
-    // Competition button — opens setup wizard
+    // Competition button — opens setup wizard at competition step
     const compBtn = this.#root.querySelector('#comp-btn');
     if (compBtn) {
       compBtn.addEventListener('click', () => {
@@ -189,6 +188,31 @@ export default class App {
         this.#wizard.open(
           () => this.#onSetupComplete(),
           () => this.#startLive()
+        );
+      });
+    }
+
+    // Classes button — opens setup wizard at classes step
+    const classesBtn = this.#root.querySelector('#classes-btn');
+    if (classesBtn) {
+      classesBtn.addEventListener('click', () => {
+        this.#scheduler.stop();
+        this.#wizard.open(
+          () => this.#onClassesOrClubsChanged(),
+          () => this.#startLive(),
+          { startStep: 'classes' }
+        );
+      });
+    }
+
+    // Clubs button — opens setup wizard at clubs step
+    const clubsBtn = this.#root.querySelector('#clubs-btn');
+    if (clubsBtn) {
+      clubsBtn.addEventListener('click', () => {
+        this.#wizard.open(
+          () => {},  // no-op: club changes take effect immediately via settings
+          null,
+          { startStep: 'clubs' }
         );
       });
     }
@@ -201,13 +225,13 @@ export default class App {
       });
     }
 
-    // Refresh scheduler when followed classes change
-    this.#settings.onChange('followedClasses', () => {
-      if (this.#settingsPanel.isOpen) {
-        this.#scheduler.refresh()
-          .catch(err => console.error('Failed to refresh scheduler:', err));
-      }
-    });
+    // Predictions panel visibility
+    const predictionsSection = this.#root.querySelector('#predictions');
+    const applyPredictionsVisibility = (show) => {
+      predictionsSection.style.display = show ? '' : 'none';
+    };
+    applyPredictionsVisibility(this.#settings.showPredictions);
+    this.#settings.onChange('showPredictions', applyPredictionsVisibility);
 
     // Show empty panels
     this.#latestPanel.clear();
@@ -292,6 +316,13 @@ export default class App {
     }
 
     // Restart
+    this.#scheduler.refresh()
+      .catch(err => console.error('Failed to refresh scheduler:', err));
+    this.#startLive();
+  }
+
+  #onClassesOrClubsChanged() {
+    // Light refresh — keep event/prediction history, just update polling
     this.#scheduler.refresh()
       .catch(err => console.error('Failed to refresh scheduler:', err));
     this.#startLive();

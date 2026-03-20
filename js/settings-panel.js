@@ -1,6 +1,6 @@
 /**
- * SettingsPanel — single-page overlay for adjusting classes, clubs, top-N,
- * and speech settings. Changes apply immediately via SettingsManager.
+ * SettingsPanel — single-page overlay for adjusting top-N and speech settings.
+ * Changes apply immediately via SettingsManager.
  * @module settings-panel
  */
 
@@ -11,14 +11,8 @@ export default class SettingsPanel {
   /** @type {HTMLElement} */
   #container;
 
-  /** @type {import('./api-client.js').default} */
-  #api;
-
   /** @type {import('./settings-manager.js').default} */
   #settings;
-
-  /** @type {string[]} */
-  #classes = [];
 
   /** @type {import('./google-tts-notifier.js').default|null} */
   #googleTts = null;
@@ -26,25 +20,19 @@ export default class SettingsPanel {
   /**
    * @param {Object} deps
    * @param {HTMLElement} deps.containerEl
-   * @param {import('./api-client.js').default} deps.apiClient
    * @param {import('./settings-manager.js').default} deps.settings
    * @param {import('./google-tts-notifier.js').default} [deps.googleTts]
    */
-  constructor({ containerEl, apiClient, settings, googleTts }) {
+  constructor({ containerEl, settings, googleTts }) {
     this.#container = containerEl;
-    this.#api = apiClient;
     this.#settings = settings;
     this.#googleTts = googleTts ?? null;
   }
 
-  /**
-   * Show the settings panel overlay.
-   * @param {() => void} onChangeCompetition — called when user clicks "Change competition"
-   */
+  /** Show the settings panel overlay. */
   open() {
     this.#buildDOM();
     this.#container.classList.add('wizard--open');
-    this.#loadData();
   }
 
   /** Close the settings panel overlay. */
@@ -86,17 +74,10 @@ export default class SettingsPanel {
     title.textContent = 'Settings';
     content.appendChild(title);
 
-    // Section: Classes
-    const classesSection = this.#createSection('Classes', 'settings-classes');
-    const classesBody = classesSection.querySelector('.settings-section__body');
-    classesBody.innerHTML = '<p>Loading classes…</p>';
-    content.appendChild(classesSection);
-
-    // Section: Followed Clubs
-    const clubsSection = this.#createSection('Followed Clubs', 'settings-clubs');
-    const clubsBody = clubsSection.querySelector('.settings-section__body');
-    clubsBody.innerHTML = '<p>Loading clubs…</p>';
-    content.appendChild(clubsSection);
+    // Section: Predictions
+    const predSection = this.#createSection('Predictions', 'settings-predictions');
+    this.#renderPredictions(predSection.querySelector('.settings-section__body'));
+    content.appendChild(predSection);
 
     // Section: Top N Runners
     const topNSection = this.#createSection('Top N Runners', 'settings-topn');
@@ -140,177 +121,26 @@ export default class SettingsPanel {
   }
 
   /* ------------------------------------------------------------------
-   * Data loading
-   * ----------------------------------------------------------------*/
-
-  async #loadData() {
-    await Promise.all([
-      this.#loadClasses(),
-      this.#loadClubs(),
-    ]);
-  }
-
-  async #loadClasses() {
-    const body = this.#container.querySelector('#settings-classes .settings-section__body');
-    try {
-      const classes = await this.#api.getClasses(this.#settings.compId);
-      this.#classes = (classes ?? []).map(c => c.className);
-      body.innerHTML = '';
-      this.#renderClassCheckboxes(body);
-    } catch (err) {
-      body.innerHTML = '';
-      const p = document.createElement('p');
-      p.className = 'wizard__empty';
-      p.textContent = `Failed to load classes: ${err.message}`;
-      body.appendChild(p);
-    }
-  }
-
-  async #loadClubs() {
-    const body = this.#container.querySelector('#settings-clubs .settings-section__body');
-    try {
-      const followed = this.#settings.followedClasses;
-      const classNames = followed ?? this.#classes;
-
-      // If classes haven't loaded yet, wait briefly
-      if (classNames.length === 0) {
-        await this.#loadClasses();
-        const updatedFollowed = this.#settings.followedClasses;
-        const updatedClassNames = updatedFollowed ?? this.#classes;
-        if (updatedClassNames.length === 0) {
-          body.innerHTML = '<p class="wizard__empty">No classes available.</p>';
-          return;
-        }
-      }
-
-      const classNames2 = this.#settings.followedClasses ?? this.#classes;
-      const results = await Promise.all(
-        classNames2.map(cls =>
-          this.#api.getClassResults(this.#settings.compId, cls, { skipCache: true }).catch(() => null)
-        )
-      );
-
-      const clubSet = new Set();
-      for (const res of results) {
-        if (!res?.results) continue;
-        for (const runner of res.results) {
-          if (runner.club) clubSet.add(runner.club);
-        }
-      }
-
-      const allClubs = [...clubSet].sort((a, b) => a.localeCompare(b, 'sv'));
-      body.innerHTML = '';
-
-      if (allClubs.length === 0) {
-        body.innerHTML = '<p class="wizard__empty">No clubs found in competition data.</p>';
-        return;
-      }
-
-      this.#renderClubCheckboxes(body, allClubs);
-    } catch (err) {
-      body.innerHTML = '';
-      const p = document.createElement('p');
-      p.className = 'wizard__empty';
-      p.textContent = `Failed to load clubs: ${err.message}`;
-      body.appendChild(p);
-    }
-  }
-
-  /* ------------------------------------------------------------------
    * Rendering
    * ----------------------------------------------------------------*/
 
-  /** @param {HTMLElement} container */
-  #renderClassCheckboxes(container) {
-    const followed = this.#settings.followedClasses;
-    const allSelected = followed === null;
+  /** @param {HTMLElement} body */
+  #renderPredictions(body) {
+    const label = document.createElement('label');
+    label.className = 'wizard__label';
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '8px';
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'wizard__toggle-all';
-    toggleBtn.textContent = allSelected ? 'Deselect All' : 'Select All';
-    toggleBtn.addEventListener('click', () => {
-      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-      const anyUnchecked = [...checkboxes].some(cb => !cb.checked);
-      checkboxes.forEach(cb => { cb.checked = anyUnchecked; });
-      toggleBtn.textContent = anyUnchecked ? 'Deselect All' : 'Select All';
-      this.#saveClasses(container);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !!this.#settings.get('showPredictions');
+    checkbox.addEventListener('change', () => {
+      this.#settings.set('showPredictions', checkbox.checked);
     });
-    container.appendChild(toggleBtn);
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'wizard__classes';
-
-    for (const cls of this.#classes) {
-      const label = document.createElement('label');
-      label.className = 'wizard__class-label';
-
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.value = cls;
-      cb.checked = allSelected || (followed && followed.includes(cls));
-      cb.addEventListener('change', () => this.#saveClasses(container));
-
-      label.append(cb, document.createTextNode(` ${cls}`));
-      wrapper.appendChild(label);
-    }
-    container.appendChild(wrapper);
-  }
-
-  /** @param {HTMLElement} container */
-  #saveClasses(container) {
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-    const selected = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
-    const value = selected.length === this.#classes.length ? null : selected;
-    this.#settings.set('followedClasses', value);
-  }
-
-  /**
-   * @param {HTMLElement} container
-   * @param {string[]} allClubs
-   */
-  #renderClubCheckboxes(container, allClubs) {
-    const currentClubs = this.#settings.followedClubs ?? [];
-
-    const desc = document.createElement('p');
-    desc.textContent = 'Runners from selected clubs always appear in latest events regardless of ranking.';
-    container.appendChild(desc);
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'wizard__toggle-all';
-    toggleBtn.textContent = currentClubs.length === allClubs.length ? 'Deselect All' : 'Select All';
-    toggleBtn.addEventListener('click', () => {
-      const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
-      const anyUnchecked = [...checkboxes].some(cb => !cb.checked);
-      checkboxes.forEach(cb => { cb.checked = anyUnchecked; });
-      toggleBtn.textContent = anyUnchecked ? 'Deselect All' : 'Select All';
-      this.#saveClubs(wrapper);
-    });
-    container.appendChild(toggleBtn);
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'wizard__classes';
-
-    for (const club of allClubs) {
-      const label = document.createElement('label');
-      label.className = 'wizard__class-label';
-
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.value = club;
-      cb.checked = currentClubs.includes(club);
-      cb.addEventListener('change', () => this.#saveClubs(wrapper));
-
-      label.append(cb, document.createTextNode(` ${club}`));
-      wrapper.appendChild(label);
-    }
-    container.appendChild(wrapper);
-  }
-
-  /** @param {HTMLElement} wrapper */
-  #saveClubs(wrapper) {
-    const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
-    const selected = [...checkboxes].filter(cb => cb.checked).map(cb => cb.value);
-    this.#settings.set('followedClubs', selected);
+    label.append(checkbox, 'Show predictions panel');
+    body.appendChild(label);
   }
 
   /** @param {HTMLElement} body */

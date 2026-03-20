@@ -127,7 +127,7 @@ const sv = {
     return `Ny ledare i ${evt.className}, ${evt.runner} från ${evt.club}, med tiden ${duration}`;
   },
   finishOther(evt, duration, place) {
-    return `Ny löpare på plats: ${place}, i ${evt.className}: ${evt.runner} från ${evt.club}, ${duration} efter ledaren.`;
+    return `Ny löpare på plats ${place}, i ${evt.className}: ${evt.runner} från ${evt.club}, ${duration} efter ledaren.`;
   },
   splitLeader(evt, control, duration) {
     return `Ny bästa tid vid kontrollen ${control} i ${evt.className}: ${evt.runner} från ${evt.club}, passerade på ${duration}.`;
@@ -181,7 +181,7 @@ const nb = {
     return `Ny leder i ${evt.className}, ${evt.runner} fra ${evt.club}, med tiden ${duration}`;
   },
   finishOther(evt, duration, place) {
-    return `Ny løper på plass: ${place}, i ${evt.className}: ${evt.runner} fra ${evt.club}, ${duration} bak lederen.`;
+    return `Ny løper på plass ${place}, i ${evt.className}: ${evt.runner} fra ${evt.club}, ${duration} bak lederen.`;
   },
   splitLeader(evt, control, duration) {
     return `Ny beste tid ved posten ${control} i ${evt.className}: ${evt.runner} fra ${evt.club}, passerte på ${duration}.`;
@@ -235,7 +235,7 @@ const da = {
     return `Ny leder i ${evt.className}, ${evt.runner} fra ${evt.club}, med tiden ${duration}`;
   },
   finishOther(evt, duration, place) {
-    return `Ny løber på plads: ${place}, i ${evt.className}: ${evt.runner} fra ${evt.club}, ${duration} efter lederen.`;
+    return `Ny løber på plads ${place}, i ${evt.className}: ${evt.runner} fra ${evt.club}, ${duration} efter lederen.`;
   },
   splitLeader(evt, control, duration) {
     return `Ny bedste tid ved posten ${control} i ${evt.className}: ${evt.runner} fra ${evt.club}, passerede på ${duration}.`;

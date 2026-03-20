@@ -14,6 +14,7 @@ const DEFAULTS = {
   topN: 4,
   maxLatestEvents: 10,
   maxPredictions: 5,
+  showPredictions: false,
   predictionAlgorithm: 'median',  // 'fastest' | 'median'
   speechLang: 'sv-SE',
   speechEnabled: false,
@@ -88,6 +89,7 @@ export default class SettingsManager {
   get topN()            { return this.#data.topN; }
   get maxLatestEvents() { return this.#data.maxLatestEvents; }
   get maxPredictions()  { return this.#data.maxPredictions; }
+  get showPredictions() { return this.#data.showPredictions; }
   get predictionAlgorithm() { return this.#data.predictionAlgorithm; }
   get speechLang()      { return this.#data.speechLang; }
   get speechRate()      { return this.#data.speechRate; }
