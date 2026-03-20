@@ -157,7 +157,7 @@ export default class App {
         const browserMuted = this.#speech.toggleMute();
         // Sync Google TTS mute state with browser speech
         if (this.#googleTts.muted !== browserMuted) this.#googleTts.toggleMute();
-        speechBtn.textContent = browserMuted ? '🤐' : '🗣️';
+        speechBtn.textContent = browserMuted ? 'Speech Off' : 'Speech On';
         speechBtn.classList.toggle('app-header__btn--muted', browserMuted);
         speechBtn.title = browserMuted ? 'Enable speech' : 'Disable speech';
       });
