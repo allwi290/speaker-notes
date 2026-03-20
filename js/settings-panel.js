@@ -534,14 +534,14 @@ export default class SettingsPanel {
         const apiKey = this.#settings.get('googleTtsApiKey');
         if (!apiKey) { alert('Please enter a Google API key first.'); return; }
         try {
-          await this.#googleTts.speakText('Vi har en ny bästa tid vid radiokontroll K65 i klassen H18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
+          await this.#googleTts.speakText('Vi har en ny bästa tid vid radiokontroll K65 i klassen H 18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
         } catch (err) {
           alert(`Google TTS failed: ${err.message}`);
         }
       } else {
         if (typeof speechSynthesis === 'undefined') return;
         speechSynthesis.cancel();
-        const utt = new SpeechSynthesisUtterance('Vi har en ny bästa tid vid radiokontroll K65 i klassen H18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
+        const utt = new SpeechSynthesisUtterance('Vi har en ny bästa tid vid radiokontroll K65 i klassen H 18, Gustav Wikström från Visborgs O K, passerade på tiden 4 minuter och 36 sekunder.');
         utt.lang = langSelect.value;
         utt.rate = parseFloat(rateInput.value);
         utt.pitch = 1.0;
