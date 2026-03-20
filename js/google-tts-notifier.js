@@ -38,16 +38,18 @@ export function textToSsml(text) {
   return `<speak>${s}</speak>`;
 }
 
-/** Map speechLang codes to Google Cloud TTS Wavenet voice names. */
+/** Map speechLang codes to Google Cloud TTS Chirp3-HD voice names.
+ *  Chirp3-HD voices are multi-lingual; the same persona works across languages.
+ */
 export const VOICE_MAP = {
-  'sv-SE':  { name: 'sv-SE-Wavenet-A', ssmlGender: 'FEMALE' },
-  'en-GB':  { name: 'en-GB-Wavenet-B', ssmlGender: 'MALE' },
-  'en-US':  { name: 'en-US-Wavenet-D', ssmlGender: 'MALE' },
-  'nb-NO':  { name: 'nb-NO-Wavenet-A', ssmlGender: 'FEMALE' },
-  'da-DK':  { name: 'da-DK-Wavenet-A', ssmlGender: 'FEMALE' },
-  'fi-FI':  { name: 'fi-FI-Wavenet-A', ssmlGender: 'FEMALE' },
-  'de-DE':  { name: 'de-DE-Wavenet-A', ssmlGender: 'FEMALE' },
-  'fr-FR':  { name: 'fr-FR-Wavenet-A', ssmlGender: 'FEMALE' },
+  'sv-SE':  { name: 'sv-SE-Chirp3-HD-Erinome' },
+  'en-GB':  { name: 'en-GB-Chirp3-HD-Erinome' },
+  'en-US':  { name: 'en-US-Chirp3-HD-Erinome' },
+  'nb-NO':  { name: 'nb-NO-Chirp3-HD-Erinome' },
+  'da-DK':  { name: 'da-DK-Chirp3-HD-Erinome' },
+  'fi-FI':  { name: 'fi-FI-Chirp3-HD-Erinome' },
+  'de-DE':  { name: 'de-DE-Chirp3-HD-Erinome' },
+  'fr-FR':  { name: 'fr-FR-Chirp3-HD-Erinome' },
 };
 
 export default class GoogleTtsNotifier {
@@ -179,7 +181,7 @@ export default class GoogleTtsNotifier {
     if (!apiKey) throw new Error('No API key configured');
 
     const lang = this.#settings.speechLang ?? 'sv-SE';
-    const voiceConfig = VOICE_MAP[lang] ?? { name: null, ssmlGender: 'NEUTRAL' };
+    const voiceConfig = VOICE_MAP[lang] ?? { name: `${lang}-Chirp3-HD-Fenrir` };
 
     const ssml = textToSsml(text);
 
@@ -187,17 +189,13 @@ export default class GoogleTtsNotifier {
       input: { ssml },
       voice: {
         languageCode: lang,
-        ssmlGender: voiceConfig.ssmlGender,
+        name: voiceConfig.name,
       },
       audioConfig: {
         audioEncoding: 'MP3',
         speakingRate: Math.max(0.25, Math.min(4.0, this.#settings.speechRate ?? 1.1)),
       },
     };
-
-    if (voiceConfig.name) {
-      body.voice.name = voiceConfig.name;
-    }
 
     const resp = await fetch(`${API_URL}?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',

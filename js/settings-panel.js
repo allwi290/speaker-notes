@@ -528,14 +528,14 @@ export default class SettingsPanel {
         const apiKey = this.#settings.get('googleTtsApiKey');
         if (!apiKey) { alert('Please enter a Google API key first.'); return; }
         const lang = langSelect.value;
-        const voiceConfig = VOICE_MAP[lang] ?? { name: null, ssmlGender: 'NEUTRAL' };
+        const voiceConfig = VOICE_MAP[lang] ?? { name: `${lang}-Chirp3-HD-Fenrir` };
         try {
           const resp = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               input: { text: 'This is a test of the Google speech synthesis.' },
-              voice: { languageCode: lang, name: voiceConfig.name, ssmlGender: voiceConfig.ssmlGender },
+              voice: { languageCode: lang, name: voiceConfig.name },
               audioConfig: { audioEncoding: 'MP3', speakingRate: parseFloat(rateInput.value) },
             }),
           });
